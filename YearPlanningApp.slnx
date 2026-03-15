@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/YearPlanningApp.API/YearPlanningApp.API.csproj" />
+    <Project Path="src/YearPlanningApp.Application/YearPlanningApp.Application.csproj" />
+    <Project Path="src/YearPlanningApp.Domain/YearPlanningApp.Domain.csproj" />
+    <Project Path="src/YearPlanningApp.Infrastructure/YearPlanningApp.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/YearPlanningApp.Application.Tests/YearPlanningApp.Application.Tests.csproj" />
+    <Project Path="tests/YearPlanningApp.Domain.Tests/YearPlanningApp.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

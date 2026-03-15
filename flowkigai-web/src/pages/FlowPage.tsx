@@ -1,0 +1,69 @@
+import { useEffect } from "react";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
+import { useFlowTimerStore } from "@/stores/flowTimerStore";
+import { flowSessionApi } from "@/api/flowSessionApi";
+import PreSessionSetup from "@/components/flow/PreSessionSetup";
+import FlowTimer from "@/components/flow/FlowTimer";
+import MicroReview from "@/components/flow/MicroReview";
+import SessionComplete from "@/components/flow/SessionComplete";
+import { useState } from "react";
+
+export default function FlowPage() {
+  const { phase, startSetup, restoreRunning } = useFlowTimerStore();
+  const [checking, setChecking] = useState(true);
+
+  // On mount: check for an active session and restore if found
+  useEffect(() => {
+    let cancelled = false;
+    async function checkActive() {
+      try {
+        const active = await flowSessionApi.getActive();
+        if (!cancelled && active) {
+          const elapsedSec = Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000);
+          restoreRunning(active, elapsedSec);
+        }
+      } catch { /* no active session */ }
+      if (!cancelled) setChecking(false);
+    }
+    checkActive();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (checking) {
+    return (
+      <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // ── State machine routing ────────────────────────────────────────────────
+
+  if (phase === "setup")       return <PreSessionSetup />;
+  if (phase === "running" || phase === "paused") return <FlowTimer />;
+  if (phase === "microreview") return <MicroReview />;
+  if (phase === "complete")    return <SessionComplete />;
+
+  // ── Idle state: landing screen ───────────────────────────────────────────
+  return (
+    <Box sx={{
+      height: "100%", bgcolor: "background.default",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      px: 4, textAlign: "center",
+    }}>
+      <Typography variant="h1" mb={2} sx={{ fontSize: "3rem" }}>🌊</Typography>
+      <Typography variant="h5" fontWeight={700} mb={1}>Flow sessions</Typography>
+      <Typography variant="body1" color="text.secondary" mb={1} sx={{ maxWidth: 400 }}>
+        Dedicated, distraction-free blocks of deep work.
+      </Typography>
+      <Typography variant="body2" color="text.disabled" mb={4} sx={{ maxWidth: 400 }}>
+        Start a session, link it to a goal, and review how it went afterwards.
+      </Typography>
+      <Button variant="contained" size="large" onClick={startSetup} sx={{ borderRadius: 6, px: 4 }}>
+        Start a session →
+      </Button>
+    </Box>
+  );
+}

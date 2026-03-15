@@ -1,0 +1,40 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.swp
+.DS_Store
+
+## EF Core migrations output
+*.db
+
+## Secrets & env
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+docker-compose.override.yml
+
+## Logs
+logs/
+*.log
+
+## Node / frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+## Test results
+TestResults/
+coverage/
+*.coveragexml
+
+## Rider / JetBrains
+.idea/
+
+## Visual Studio Code
+.vscode/
+!.vscode/extensions.json

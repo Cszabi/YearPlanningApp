@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+}
+
+@layer base {
+  /* ── Light theme (default) ────────────────────────────────────────────── */
+  :root {
+    --radius: 0.5rem;
+
+    /* Surfaces */
+    --bg-app:    #FAFAF8;
+    --bg-card:   #FFFFFF;
+    --bg-input:  #FFFFFF;
+    --bg-nav:    #FFFFFF;
+
+    /* Header / primary accent */
+    --bg-header: #0D6E6E;
+    --text-on-header: #FFFFFF;
+
+    /* Text */
+    --text-primary:   #1A1A2E;
+    --text-secondary: #374151;
+    --text-muted:     #6B7280;
+    --text-faint:     #9CA3AF;
+
+    /* Borders */
+    --border:         #E5E7EB;
+    --border-strong:  #D1D5DB;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+
+    /* Legacy vars kept for Radix/ShadCN compatibility */
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border-hsl: 214 32% 91%;
+    --input: 214 32% 91%;
+  }
+
+  /* ── Dark theme ───────────────────────────────────────────────────────── */
+  :root.dark {
+    /* Surfaces */
+    --bg-app:    #0F172A;
+    --bg-card:   #1E293B;
+    --bg-input:  #1E293B;
+    --bg-nav:    #1E293B;
+
+    /* Header */
+    --bg-header: #0D3D3D;
+    --text-on-header: #E2E8F0;
+
+    /* Text */
+    --text-primary:   #F1F5F9;
+    --text-secondary: #CBD5E1;
+    --text-muted:     #94A3B8;
+    --text-faint:     #64748B;
+
+    /* Borders */
+    --border:         #334155;
+    --border-strong:  #475569;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+
+    /* Legacy */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 16% 57%;
+    --border-hsl: 217 33% 25%;
+    --input: 217 33% 17%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* ── Dark mode: override Tailwind gray utilities globally ─────────────── */
+  /* Text */
+  .dark .text-gray-900 { color: var(--text-primary) !important; }
+  .dark .text-gray-800 { color: var(--text-primary) !important; }
+  .dark .text-gray-700 { color: var(--text-secondary) !important; }
+  .dark .text-gray-600 { color: var(--text-secondary) !important; }
+  .dark .text-gray-500 { color: var(--text-muted) !important; }
+  .dark .text-gray-400 { color: var(--text-faint) !important; }
+  .dark .text-gray-300 { color: var(--text-faint) !important; }
+
+  /* Surfaces */
+  .dark .bg-white    { background-color: var(--bg-card) !important; }
+  .dark .bg-gray-50  { background-color: var(--bg-nav) !important; }
+  .dark .bg-gray-100 { background-color: var(--bg-app) !important; }
+  .dark .bg-gray-200 { background-color: var(--bg-app) !important; }
+
+  /* Borders */
+  .dark .border-gray-100 { border-color: var(--border) !important; }
+  .dark .border-gray-200 { border-color: var(--border) !important; }
+  .dark .border-gray-300 { border-color: var(--border-strong) !important; }
+
+  /* Inputs */
+  .dark input, .dark textarea, .dark select {
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+  .dark input::placeholder, .dark textarea::placeholder {
+    color: var(--text-faint);
+  }
+
+  /* Hover states in dark */
+  .dark .hover\:bg-gray-50:hover  { background-color: rgba(255,255,255,0.05) !important; }
+  .dark .hover\:bg-red-50:hover   { background-color: rgba(239,68,68,0.1) !important; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s, color 0.2s;
+  }
+}
