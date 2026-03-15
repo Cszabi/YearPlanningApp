@@ -56,7 +56,14 @@
       "Bash(gh:*)",
       "Bash(git credential fill:*)",
       "Bash(powershell.exe -Command \"echo url=https://github.com | git credential fill\")",
-      "Bash(powershell.exe -Command \":*)"
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(export GH_PATH=\"/c/Program Files/GitHub CLI\")",
+      "Bash(export PATH=\"$PATH:$GH_PATH\")",
+      "Bash(powershell.exe -File:*)",
+      "Bash(git init:*)",
+      "Bash(git fetch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
