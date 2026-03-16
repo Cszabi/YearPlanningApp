@@ -36,7 +36,7 @@ LOGIN_RESP=$(curl -s -X POST "$API/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$DEMO_EMAIL\",\"password\":\"$DEMO_PASSWORD\"}")
 
-ACCESS_TOKEN=$(echo "$LOGIN_RESP" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+ACCESS_TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['accessToken'])" 2>/dev/null)
 
 if [ -z "$ACCESS_TOKEN" ]; then
   echo "    ERROR: Could not extract access token."
@@ -45,72 +45,58 @@ if [ -z "$ACCESS_TOKEN" ]; then
 fi
 echo "    Login OK. Token: ${ACCESS_TOKEN:0:20}..."
 
-AUTH="-H \"Authorization: Bearer $ACCESS_TOKEN\""
-
 # Helper: authenticated POST
 api_post() {
-  local path="$1"
-  local body="$2"
-  curl -s -X POST "$API$path" \
+  curl -s -X POST "$API$1" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -d "$body"
+    -d "$2"
 }
 
 # ── 3. Create a deep work goal ────────────────────────────────────────────────
 echo "--> Creating 'Build Flowkigai' goal..."
-GOAL1_RESP=$(api_post "/goals" "{
-  \"title\": \"Build Flowkigai\",
-  \"description\": \"Complete the POC and launch to first users.\",
-  \"goalType\": \"Project\",
-  \"energyType\": \"DeepWork\",
-  \"lifeArea\": \"CreativityHobbies\",
-  \"year\": $YEAR
-}")
-GOAL1_ID=$(echo "$GOAL1_RESP" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+GOAL1_RESP=$(api_post "/goals" \
+  "{\"year\":$YEAR,\"title\":\"Build Flowkigai\",\"description\":\"Complete the POC and launch to first users.\",\"goalType\":\"Project\",\"energyLevel\":\"Deep\",\"lifeArea\":\"CreativityHobbies\"}")
+GOAL1_ID=$(echo "$GOAL1_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null)
 echo "    Goal 1 ID: $GOAL1_ID"
 
 # ── 4. Create a habit goal ────────────────────────────────────────────────────
 echo "--> Creating 'Daily deep work' habit goal..."
-GOAL2_RESP=$(api_post "/goals" "{
-  \"title\": \"Daily deep work\",
-  \"description\": \"1 focused session every weekday.\",
-  \"goalType\": \"Repetitive\",
-  \"energyType\": \"DeepWork\",
-  \"lifeArea\": \"LearningGrowth\",
-  \"year\": $YEAR
-}")
-GOAL2_ID=$(echo "$GOAL2_RESP" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+GOAL2_RESP=$(api_post "/goals" \
+  "{\"year\":$YEAR,\"title\":\"Daily deep work\",\"description\":\"1 focused session every weekday.\",\"goalType\":\"Repetitive\",\"energyLevel\":\"Medium\",\"lifeArea\":\"LearningGrowth\"}")
+GOAL2_ID=$(echo "$GOAL2_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null)
 echo "    Goal 2 ID: $GOAL2_ID"
 
 # ── 5. Add milestone + tasks to goal 1 ───────────────────────────────────────
 if [ -n "$GOAL1_ID" ]; then
   echo "--> Adding milestone to goal 1..."
-  MILESTONE_RESP=$(api_post "/goals/$GOAL1_ID/milestones" "{
-    \"title\": \"MVP Launch\",
-    \"dueDate\": \"$YEAR-12-31\"
-  }")
-  MILESTONE_ID=$(echo "$MILESTONE_RESP" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+  MILESTONE_RESP=$(api_post "/goals/$GOAL1_ID/milestones" \
+    "{\"year\":$YEAR,\"title\":\"MVP Launch\",\"targetDate\":\"$YEAR-12-31T00:00:00Z\",\"orderIndex\":0}")
+  MILESTONE_ID=$(echo "$MILESTONE_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null)
   echo "    Milestone ID: $MILESTONE_ID"
 
   if [ -n "$MILESTONE_ID" ]; then
     echo "--> Adding tasks..."
     api_post "/goals/$GOAL1_ID/milestones/$MILESTONE_ID/tasks" \
-      "{\"title\": \"Deploy to production VPS\", \"isNextAction\": true}" > /dev/null
+      "{\"year\":$YEAR,\"title\":\"Deploy to production VPS\",\"energyLevel\":\"Deep\",\"estimatedMinutes\":60,\"isNextAction\":true}" > /dev/null
     api_post "/goals/$GOAL1_ID/milestones/$MILESTONE_ID/tasks" \
-      "{\"title\": \"Set up custom domain with HTTPS\", \"isNextAction\": false}" > /dev/null
+      "{\"year\":$YEAR,\"title\":\"Set up custom domain with HTTPS\",\"energyLevel\":\"Medium\",\"isNextAction\":false}" > /dev/null
     api_post "/goals/$GOAL1_ID/milestones/$MILESTONE_ID/tasks" \
-      "{\"title\": \"Invite first 3 beta users\", \"isNextAction\": false}" > /dev/null
-    echo "    Tasks added."
+      "{\"year\":$YEAR,\"title\":\"Invite first 3 beta users\",\"energyLevel\":\"Shallow\",\"isNextAction\":false}" > /dev/null
+    echo "    3 tasks added."
   fi
 fi
 
-# ── 6. Verify ─────────────────────────────────────────────────────────────────
-echo "--> Verifying goals..."
-GOALS_RESP=$(curl -s "$API/goals?year=$YEAR" \
-  -H "Authorization: Bearer $ACCESS_TOKEN")
-GOAL_COUNT=$(echo "$GOALS_RESP" | grep -o '"id":"' | wc -l | tr -d ' ')
-echo "    Found $GOAL_COUNT goal(s)."
+# ── 6. Start Ikigai journey ───────────────────────────────────────────────────
+echo "--> Starting Ikigai journey..."
+api_post "/ikigai/$YEAR/start" '' > /dev/null
+echo "    Journey started."
+
+# ── 7. Verify ─────────────────────────────────────────────────────────────────
+echo "--> Verifying..."
+GOALS_RESP=$(curl -s "$API/goals?year=$YEAR" -H "Authorization: Bearer $ACCESS_TOKEN")
+GOAL_COUNT=$(echo "$GOALS_RESP" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['data']))" 2>/dev/null)
+echo "    Goals in DB: $GOAL_COUNT"
 
 echo ""
 echo "==> Seed complete!"
