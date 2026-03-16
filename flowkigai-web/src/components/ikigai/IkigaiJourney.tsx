@@ -13,6 +13,7 @@ const DRAFT_KEY = `flowkigai-ikigai-draft-${YEAR}`;
 
 type Phase =
   | "loading"
+  | "error"
   | "start"
   | "rooms"
   | "synthesis"
@@ -51,7 +52,7 @@ export default function IkigaiJourney() {
   const [savingNorthStar, setSavingNorthStar] = useState(false);
   const [savingValues, setSavingValues] = useState(false);
 
-  const { data: journey, isLoading } = useQuery<IkigaiJourneyDto | null>({
+  const { data: journey, isLoading, isError, refetch } = useQuery<IkigaiJourneyDto | null>({
     queryKey: ["ikigaiJourney", YEAR],
     queryFn: async () => {
       try {
@@ -66,6 +67,11 @@ export default function IkigaiJourney() {
 
   useEffect(() => {
     if (isLoading) return;
+
+    if (isError) {
+      setPhase("error");
+      return;
+    }
 
     if (journey === null) {
       setPhase("start");
@@ -116,7 +122,7 @@ export default function IkigaiJourney() {
       answers: { ...apiAnswers, ...localDraft.answers },
     });
     setPhase("rooms");
-  }, [isLoading, journey, navigate]);
+  }, [isLoading, isError, journey, navigate]);
 
   async function handleStart() {
     setStarting(true);
@@ -213,6 +219,26 @@ export default function IkigaiJourney() {
         style={{ backgroundColor: "var(--bg-app)" }}
       >
         <span className="text-sm" style={{ color: "var(--text-faint)" }}>Loading your journey…</span>
+      </div>
+    );
+  }
+
+  if (phase === "error") {
+    return (
+      <div
+        className="h-full flex flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: "var(--bg-app)" }}
+      >
+        <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Could not load your journey.
+        </span>
+        <button
+          onClick={() => { setPhase("loading"); refetch(); }}
+          className="px-6 py-2 rounded-full text-white text-sm font-medium"
+          style={{ backgroundColor: "#0D6E6E" }}
+        >
+          Retry
+        </button>
       </div>
     );
   }

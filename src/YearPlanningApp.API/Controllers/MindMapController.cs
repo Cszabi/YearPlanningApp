@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using YearPlanningApp.API.Models;
 using YearPlanningApp.Application.MindMap;
 using YearPlanningApp.Domain.Enums;
@@ -10,6 +11,7 @@ namespace YearPlanningApp.API.Controllers;
 [ApiController]
 [Route("api/v1/mind-maps")]
 [Authorize]
+[EnableRateLimiting("general")]
 public class MindMapController : ControllerBase
 {
     private readonly IMediator _mediator;

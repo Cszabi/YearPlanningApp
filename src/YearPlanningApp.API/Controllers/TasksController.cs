@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using YearPlanningApp.API.Models;
 using YearPlanningApp.Application.Goals;
 using YearPlanningApp.Domain.Enums;
@@ -9,6 +10,7 @@ namespace YearPlanningApp.API.Controllers;
 
 [ApiController]
 [Authorize]
+[EnableRateLimiting("general")]
 public class TasksController : ControllerBase
 {
     private readonly IMediator _mediator;

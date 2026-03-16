@@ -48,7 +48,9 @@ export default function PreSessionSetup() {
   const selectedTask = availableTasks.find((t) => t.id === taskItemId);
 
   const presets = ENERGY_PRESETS[energyLevel] ?? [45, 30, 25];
-  const actualMinutes = customMin ? parseInt(customMin) || minutes : minutes;
+  const customMinNum = customMin ? parseInt(customMin) : null;
+  const customMinValid = customMinNum === null || (customMinNum >= 5 && customMinNum <= 240);
+  const actualMinutes = customMinNum ?? minutes;
 
   async function handleBegin() {
     if (starting) return;
@@ -168,7 +170,9 @@ export default function PreSessionSetup() {
           <TextField
             size="small" placeholder="Custom" value={customMin}
             onChange={(e) => setCustomMin(e.target.value.replace(/\D/, ""))}
-            inputProps={{ style: { width: 60 } }}
+            inputProps={{ min: 5, max: 240, style: { width: 60 } }}
+            error={!!customMin && !customMinValid}
+            helperText={!!customMin && !customMinValid ? "5–240 min" : undefined}
             sx={{ "& input": { textAlign: "center" } }}
           />
         </Stack>
@@ -201,7 +205,7 @@ export default function PreSessionSetup() {
 
         {/* Actions */}
         <Stack direction="row" gap={2}>
-          <Button variant="contained" size="large" onClick={handleBegin} disabled={starting}
+          <Button variant="contained" size="large" onClick={handleBegin} disabled={starting || !customMinValid}
             sx={{ borderRadius: 6, flex: 1 }}>
             {starting ? <CircularProgress size={20} color="inherit" /> : "Begin session →"}
           </Button>

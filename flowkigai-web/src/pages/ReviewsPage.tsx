@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Box, Typography, Stack, Button, Paper, Chip, CircularProgress,
+  Box, Typography, Stack, Button, Paper, Chip, CircularProgress, Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -65,7 +65,7 @@ function ReviewCard({ review, onEdit }: { review: ReviewDto; onEdit: () => void 
 export default function ReviewsPage() {
   const [activeWeek, setActiveWeek] = useState<string | null>(null);
 
-  const { data: reviews = [], isLoading } = useQuery<ReviewDto[]>({
+  const { data: reviews = [], isLoading, isError, refetch } = useQuery<ReviewDto[]>({
     queryKey: ["reviews", "Weekly", YEAR],
     queryFn: () => reviewApi.getReviews("Weekly", YEAR),
     enabled: !activeWeek,
@@ -113,6 +113,16 @@ export default function ReviewsPage() {
           <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
             <CircularProgress />
           </Box>
+        )}
+
+        {isError && (
+          <Alert
+            severity="error"
+            action={<Button size="small" onClick={() => refetch()}>Retry</Button>}
+            sx={{ mb: 2 }}
+          >
+            Failed to load reviews.
+          </Alert>
         )}
 
         {!isLoading && reviews.length === 0 && (

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Box, Typography, Button, CircularProgress } from "@mui/material";
+import { Box, Typography, Button, CircularProgress, Alert } from "@mui/material";
 import { useFlowTimerStore } from "@/stores/flowTimerStore";
 import { flowSessionApi } from "@/api/flowSessionApi";
 import PreSessionSetup from "@/components/flow/PreSessionSetup";
@@ -11,6 +11,7 @@ import { useState } from "react";
 export default function FlowPage() {
   const { phase, startSetup, restoreRunning } = useFlowTimerStore();
   const [checking, setChecking] = useState(true);
+  const [checkError, setCheckError] = useState(false);
 
   // On mount: check for an active session and restore if found
   useEffect(() => {
@@ -22,7 +23,9 @@ export default function FlowPage() {
           const elapsedSec = Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000);
           restoreRunning(active, elapsedSec);
         }
-      } catch { /* no active session */ }
+      } catch {
+        if (!cancelled) setCheckError(true);
+      }
       if (!cancelled) setChecking(false);
     }
     checkActive();
@@ -53,6 +56,11 @@ export default function FlowPage() {
       alignItems: "center", justifyContent: "center",
       px: 4, textAlign: "center",
     }}>
+      {checkError && (
+        <Alert severity="warning" sx={{ mb: 3, maxWidth: 400 }}>
+          Could not check for an active session. You can still start a new one.
+        </Alert>
+      )}
       <Typography variant="h1" mb={2} sx={{ fontSize: "3rem" }}>🌊</Typography>
       <Typography variant="h5" fontWeight={700} mb={1}>Flow sessions</Typography>
       <Typography variant="body1" color="text.secondary" mb={1} sx={{ maxWidth: 400 }}>

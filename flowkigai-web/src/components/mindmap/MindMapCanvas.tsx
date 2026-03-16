@@ -250,6 +250,7 @@ export default function MindMapCanvas() {
   const [apiNodes, setApiNodes] = useState<MindMapNodeDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
@@ -286,7 +287,7 @@ export default function MindMapCanvas() {
       }
     }
     load();
-  }, []);
+  }, [loadKey]);
 
   const displayNodes = useMemo(
     () => (focusedId ? getSubtree(apiNodes, focusedId) : apiNodes),
@@ -385,8 +386,15 @@ export default function MindMapCanvas() {
   }
   if (error) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
+      <div className="w-full h-full flex flex-col items-center justify-center gap-3">
         <span className="text-sm text-red-400">{error}</span>
+        <button
+          onClick={() => setLoadKey((k) => k + 1)}
+          className="px-5 py-2 rounded-full text-white text-sm font-medium"
+          style={{ backgroundColor: "#0D6E6E" }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
