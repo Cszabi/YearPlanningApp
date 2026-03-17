@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ── Coordinate system: fixed 1000×1000 viewBox, radius 460 units ─────────────
 // The SVG uses preserveAspectRatio="xMidYMid meet" so it always fits fully
@@ -70,18 +70,32 @@ function getSubtree(nodes: MindMapNodeDto[], rootId: string): MindMapNodeDto[] {
 
 const MAX_DEPTH = 3; // center (depth 0) + 3 rings visible at once
 
+// Keep only nodes within MAX_DEPTH levels of the local root so that
+// d3.stratify receives a tree of the correct height (root.height <= MAX_DEPTH).
+function limitDepth(nodes: MindMapNodeDto[], maxDepth: number): MindMapNodeDto[] {
+  const rootNode = nodes.find((n) => n.parentNodeId === null);
+  if (!rootNode) return nodes;
+  const allowed = new Set<string>();
+  const queue: Array<{ id: string; depth: number }> = [{ id: rootNode.id, depth: 0 }];
+  while (queue.length) {
+    const { id, depth } = queue.shift()!;
+    allowed.add(id);
+    if (depth < maxDepth) {
+      nodes.filter((n) => n.parentNodeId === id).forEach((n) => queue.push({ id: n.id, depth: depth + 1 }));
+    }
+  }
+  return nodes.filter((n) => allowed.has(n.id));
+}
+
 function buildPartition(nodes: MindMapNodeDto[]): HNode | null {
   if (!nodes.length) return null;
+  const limited = limitDepth(nodes, MAX_DEPTH);
   try {
     const root = d3
       .stratify<MindMapNodeDto>()
       .id((d) => d.id)
-      .parentId((d) => d.parentNodeId)(nodes);
+      .parentId((d) => d.parentNodeId)(limited);
     root.sum(() => 1).sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
-    // Prune descendants beyond MAX_DEPTH so only 3 rings render at a time
-    root.each((node) => {
-      if (node.depth >= MAX_DEPTH) node.children = undefined;
-    });
     d3.partition<MindMapNodeDto>().size([2 * Math.PI, root.height + 1])(root);
     return root as unknown as HNode;
   } catch {
@@ -216,7 +230,9 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
               style={{ cursor: "pointer", transition: "opacity 0.12s" }}
               onClick={(e) => {
                 e.stopPropagation();
-                if (d.children) onZoomIn(d.data.id);
+                // Zoom in if node has visible children OR is at the depth limit
+                // (it may have hidden children beyond the 3-ring view)
+                if (d.children || d.depth >= MAX_DEPTH) onZoomIn(d.data.id);
               }}
               onDoubleClick={(e) => {
                 e.stopPropagation();
@@ -519,7 +535,8 @@ export default function MindMapCanvas() {
               onZoomOut={() => setFocusedId(focusedParentId)}
               onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
               onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
-              onHover={(label, x, y) => label ? setTooltip({ label, x, y }) : setTooltip(null)}
+              onHover={useCallback((label: string | null, x: number, y: number) =>
+                label ? setTooltip({ label, x, y }) : setTooltip(null), [])}
             />
           </g>
         </svg>
