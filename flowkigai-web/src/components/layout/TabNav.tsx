@@ -11,6 +11,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/context/ThemeContext";
 import DeleteAccountDialog from "./DeleteAccountDialog";
+import FlowkigaiLogo from "./FlowkigaiLogo";
 
 const SIDEBAR_W = 200;
 
@@ -51,9 +52,9 @@ export default function TabNav() {
       >
         {/* Brand */}
         <Box sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: "divider" }}>
-          <Typography variant="h6" fontWeight={700} color="primary">
-            Flowkigai
-          </Typography>
+          <Box sx={{ color: "primary.main", mb: 0.25 }}>
+            <FlowkigaiLogo size="sm" />
+          </Box>
           <Typography variant="caption" color="text.disabled" noWrap>
             {user.displayName}
           </Typography>

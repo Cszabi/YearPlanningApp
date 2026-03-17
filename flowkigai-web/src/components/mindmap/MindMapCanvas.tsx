@@ -14,11 +14,22 @@ import {
   Button, TextField, MenuItem, Select, FormControl, InputLabel,
   Typography, Stack, Divider, Paper, IconButton, Box,
   List, ListItemButton, ListItemText,
+  ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
 import { LIFE_AREA_COLORS, LIFE_AREA_NAMES } from "./nodes";
+import RadialTreeView from "./RadialTreeView";
+import TidyTreeView from "./TidyTreeView";
+
+// ── View registry ─────────────────────────────────────────────────────────────
+const VIEW_OPTIONS = [
+  { value: "sunburst",    label: "Sunburst",    icon: "☀️" },
+  { value: "radial-tree", label: "Radial Tree", icon: "🌿" },
+  { value: "tidy-tree",   label: "Tidy Tree",   icon: "🌳" },
+] as const;
+type ViewMode = (typeof VIEW_OPTIONS)[number]["value"];
 
 const YEAR = new Date().getFullYear();
 
@@ -330,6 +341,8 @@ export default function MindMapCanvas() {
   const [loadKey, setLoadKey] = useState(0);
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
+  const [viewMode, setViewMode] = useState<ViewMode>("sunburst");
+
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const [creating, setCreating] = useState<{ parentId: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState("");
@@ -492,6 +505,23 @@ export default function MindMapCanvas() {
       style={{ background: "var(--bg-app)" }}
       onClick={() => setContextMenu(null)}
     >
+      {/* View switcher */}
+      <Box sx={{ position: "absolute", top: 12, left: 12, zIndex: 10 }}>
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_, v) => { if (v) setViewMode(v as ViewMode); }}
+          size="small"
+          sx={{ bgcolor: "background.paper", borderRadius: 2, boxShadow: 1 }}
+        >
+          {VIEW_OPTIONS.map((opt) => (
+            <ToggleButton key={opt.value} value={opt.value} sx={{ px: 1.5, fontSize: "0.72rem", gap: 0.5 }}>
+              {opt.icon} {opt.label}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </Box>
+
       {/* Toolbar */}
       <Stack direction="row" spacing={1} sx={{ position: "absolute", top: 12, right: 16, zIndex: 10 }}>
         {focusedId && (
@@ -512,12 +542,21 @@ export default function MindMapCanvas() {
       {!focusedId && (
         <Typography variant="caption" color="text.disabled"
           sx={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
-          Click a section to zoom in · Right-click for options
+          {viewMode === "sunburst"
+            ? "Click a section to zoom in · Right-click for options"
+            : "Click a node to zoom in · Right-click for options"}
         </Typography>
       )}
 
-      {/* Sunburst — viewBox keeps circle fully visible at any screen size */}
-      {root ? (
+      {/* ── Views ─────────────────────────────────────────────────────────────── */}
+      {!root && viewMode === "sunburst" && (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+          <p className="text-4xl">🗺️</p>
+          <p className="text-sm text-gray-400">Complete the Ikigai journey to populate your map</p>
+        </div>
+      )}
+
+      {root && viewMode === "sunburst" && (
         <svg
           width="100%" height="100%"
           viewBox={`0 0 ${VB} ${VB}`}
@@ -531,7 +570,6 @@ export default function MindMapCanvas() {
               <stop offset="100%" stopColor="#FAFAF8" />
             </radialGradient>
           </defs>
-          {/* Soft halo */}
           <circle cx={VB / 2} cy={VB / 2} r={RADIUS * 1.01} fill="url(#bgGrad)" />
           <g transform={`translate(${VB / 2},${VB / 2})`}>
             <SunburstSvg
@@ -545,11 +583,44 @@ export default function MindMapCanvas() {
             />
           </g>
         </svg>
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-          <p className="text-4xl">🗺️</p>
-          <p className="text-sm text-gray-400">Complete the Ikigai journey to populate your map</p>
-        </div>
+      )}
+
+      {viewMode === "radial-tree" && (
+        displayNodes.some((n) => n.parentNodeId === null) ? (
+          <RadialTreeView
+            nodes={displayNodes}
+            canGoUp={focusedId !== null}
+            onZoomIn={setFocusedId}
+            onZoomOut={() => setFocusedId(focusedParentId)}
+            onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
+            onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
+            onHover={handleHover}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+            <p className="text-4xl">🗺️</p>
+            <p className="text-sm text-gray-400">Complete the Ikigai journey to populate your map</p>
+          </div>
+        )
+      )}
+
+      {viewMode === "tidy-tree" && (
+        displayNodes.some((n) => n.parentNodeId === null) ? (
+          <TidyTreeView
+            nodes={displayNodes}
+            canGoUp={focusedId !== null}
+            onZoomIn={setFocusedId}
+            onZoomOut={() => setFocusedId(focusedParentId)}
+            onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
+            onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
+            onHover={handleHover}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+            <p className="text-4xl">🗺️</p>
+            <p className="text-sm text-gray-400">Complete the Ikigai journey to populate your map</p>
+          </div>
+        )
       )}
 
       {/* ── Context menu ──────────────────────────────────────────────────────── */}
