@@ -77,7 +77,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", p => p.RequireClaim("role", "Admin"));
+    options.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
 });
 
 builder.Services.AddRateLimiter(options =>
