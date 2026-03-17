@@ -11,4 +11,7 @@ public interface IGoalRepository : IRepository<Goal>
     Task<double> CalculateGoalProgressAsync(Guid goalId, CancellationToken ct = default);
     Task<Goal?> GetByIdWithMilestonesAsync(Guid id, CancellationToken ct = default);
     Task AddMilestoneAsync(Milestone milestone, CancellationToken ct = default);
+    Task<Milestone?> GetMilestoneWithGoalAsync(Guid milestoneId, CancellationToken ct = default);
+    void UpdateMilestone(Milestone milestone);
+    void RemoveMilestone(Milestone milestone);
 }

@@ -146,6 +146,33 @@ export const goalApi = {
     return data.data as TaskDto;
   },
 
+  updateTask: async (taskId: string, body: {
+    title?: string;
+    dueDate?: string | null;
+    isNextAction?: boolean;
+    status?: string;
+  }): Promise<TaskDto> => {
+    const { data } = await api.put(`/tasks/${taskId}`, body);
+    return data.data as TaskDto;
+  },
+
+  deleteTask: async (taskId: string): Promise<void> => {
+    await api.delete(`/tasks/${taskId}`);
+  },
+
+  updateMilestone: async (milestoneId: string, body: {
+    title?: string;
+    targetDate?: string | null;
+    isComplete?: boolean;
+  }): Promise<MilestoneDto> => {
+    const { data } = await api.put(`/milestones/${milestoneId}`, body);
+    return data.data as MilestoneDto;
+  },
+
+  deleteMilestone: async (milestoneId: string): Promise<void> => {
+    await api.delete(`/milestones/${milestoneId}`);
+  },
+
   sendEmail: async (goalId: string, year: number): Promise<void> => {
     await api.post(`/goals/${goalId}/email?year=${year}`);
   },

@@ -45,6 +45,30 @@ public class GoalRepository : BaseRepository<Goal>, IGoalRepository
     public async Task AddMilestoneAsync(Milestone milestone, CancellationToken ct = default)
         => await _context.Milestones.AddAsync(milestone, ct);
 
+    public async Task<Milestone?> GetMilestoneWithGoalAsync(Guid milestoneId, CancellationToken ct = default)
+        => await _context.Milestones
+            .Include(m => m.Goal)
+            .Include(m => m.Tasks)
+            .FirstOrDefaultAsync(m => m.Id == milestoneId, ct);
+
+    public void UpdateMilestone(Milestone milestone)
+    {
+        milestone.UpdatedAt = DateTime.UtcNow;
+        _context.Milestones.Update(milestone);
+    }
+
+    public void RemoveMilestone(Milestone milestone)
+    {
+        var now = DateTime.UtcNow;
+        foreach (var task in milestone.Tasks)
+        {
+            task.DeletedAt = now;
+            _context.TaskItems.Update(task);
+        }
+        milestone.DeletedAt = now;
+        _context.Milestones.Update(milestone);
+    }
+
     public async Task<double> CalculateGoalProgressAsync(Guid goalId, CancellationToken ct = default)
     {
         var total = await _context.TaskItems.CountAsync(t => t.GoalId == goalId, ct);

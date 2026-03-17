@@ -12,6 +12,8 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { goalApi, type GoalDto, type MilestoneDto } from "@/api/goalApi";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -43,6 +45,7 @@ const ENERGY_COLOR: Record<string, "primary" | "warning" | "default"> = {
 };
 
 const YEAR = new Date().getFullYear();
+const UNDO_DELAY = 5000;
 
 // ── Inline add-task form (requires an existing milestone) ────────────────────
 
@@ -247,13 +250,31 @@ export default function GoalCard({ goal }: Props) {
   const [taskStatus, setTaskStatus] = useState<Record<string, string>>({});
   const [nextActionState, setNextActionState] = useState<Record<string, boolean>>({});
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [addingTaskTo, setAddingTaskTo] = useState<string | null>(null); // milestoneId
+  const [addingTaskTo, setAddingTaskTo] = useState<string | null>(null);
   const [addingMilestone, setAddingMilestone] = useState(false);
   const [addingFirstTask, setAddingFirstTask] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; severity: "success" | "error"; message: string }>({
-    open: false, severity: "success", message: "",
-  });
+
+  // Edit/delete task state
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const [deletedTaskIds, setDeletedTaskIds] = useState<string[]>([]);
+  const taskDeleteTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Edit/delete milestone state
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [editingMilestoneTitle, setEditingMilestoneTitle] = useState("");
+  const [editingMilestoneDate, setEditingMilestoneDate] = useState("");
+  const [deletedMilestoneIds, setDeletedMilestoneIds] = useState<string[]>([]);
+  const milestoneDeleteTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    severity: "success" | "error" | "info";
+    message: string;
+    undoId?: string;
+    undoType?: "task" | "milestone";
+  }>({ open: false, severity: "success", message: "" });
 
   const areaColor = LIFE_AREA_COLORS[goal.lifeArea] ?? "#0D6E6E";
   const totalTasks = goal.milestones.reduce((n, m) => n + m.tasks.length, 0);
@@ -303,7 +324,88 @@ export default function GoalCard({ goal }: Props) {
     }
   }
 
+  // ── Task edit/delete ────────────────────────────────────────────────────────
+
+  function startEditTask(taskId: string, title: string) {
+    setEditingTaskId(taskId);
+    setEditingTaskTitle(title);
+  }
+
+  async function saveTaskTitle(taskId: string) {
+    const trimmed = editingTaskTitle.trim();
+    setEditingTaskId(null);
+    if (!trimmed) return;
+    try {
+      await goalApi.updateTask(taskId, { title: trimmed });
+      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    } catch {
+      // no-op
+    }
+  }
+
+  function handleDeleteTask(taskId: string) {
+    setDeletedTaskIds((prev) => [...prev, taskId]);
+    setSnackbar({ open: true, severity: "info", message: "Task deleted", undoId: taskId, undoType: "task" });
+    taskDeleteTimers.current[taskId] = setTimeout(async () => {
+      await goalApi.deleteTask(taskId).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    }, UNDO_DELAY);
+  }
+
+  function undoDeleteTask(taskId: string) {
+    clearTimeout(taskDeleteTimers.current[taskId]);
+    delete taskDeleteTimers.current[taskId];
+    setDeletedTaskIds((prev) => prev.filter((id) => id !== taskId));
+    setSnackbar((s) => ({ ...s, open: false }));
+  }
+
+  // ── Milestone edit/delete ───────────────────────────────────────────────────
+
+  function startEditMilestone(ms: MilestoneDto) {
+    setEditingMilestoneId(ms.id);
+    setEditingMilestoneTitle(ms.title);
+    setEditingMilestoneDate(ms.targetDate ? ms.targetDate.split("T")[0] : "");
+  }
+
+  async function saveMilestoneEdit(milestoneId: string) {
+    const trimmed = editingMilestoneTitle.trim();
+    setEditingMilestoneId(null);
+    if (!trimmed) return;
+    try {
+      await goalApi.updateMilestone(milestoneId, {
+        title: trimmed,
+        targetDate: editingMilestoneDate || null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    } catch {
+      // no-op
+    }
+  }
+
+  function handleDeleteMilestone(milestoneId: string) {
+    setDeletedMilestoneIds((prev) => [...prev, milestoneId]);
+    setSnackbar({ open: true, severity: "info", message: "Milestone deleted", undoId: milestoneId, undoType: "milestone" });
+    milestoneDeleteTimers.current[milestoneId] = setTimeout(async () => {
+      await goalApi.deleteMilestone(milestoneId).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    }, UNDO_DELAY);
+  }
+
+  function undoDeleteMilestone(milestoneId: string) {
+    clearTimeout(milestoneDeleteTimers.current[milestoneId]);
+    delete milestoneDeleteTimers.current[milestoneId];
+    setDeletedMilestoneIds((prev) => prev.filter((id) => id !== milestoneId));
+    setSnackbar((s) => ({ ...s, open: false }));
+  }
+
+  function handleSnackbarUndo() {
+    if (!snackbar.open || !snackbar.undoId) return;
+    if (snackbar.undoType === "task") undoDeleteTask(snackbar.undoId);
+    if (snackbar.undoType === "milestone") undoDeleteMilestone(snackbar.undoId);
+  }
+
   const hasMilestones = goal.milestones.length > 0;
+  const visibleMilestones = goal.milestones.filter((ms) => !deletedMilestoneIds.includes(ms.id));
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 3, overflow: "visible" }}>
@@ -446,71 +548,171 @@ export default function GoalCard({ goal }: Props) {
 
               <Collapse in={expanded}>
                 <Box mt={1.5}>
-                  {goal.milestones.map((ms) => (
+                  {visibleMilestones.map((ms) => (
                     <Box key={ms.id} mb={2}>
-                      {/* Milestone header */}
-                      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" fontWeight={600} color="text.secondary"
-                          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          {ms.isComplete ? "✅" : "🏁"} {ms.title}
-                          {ms.targetDate && (
-                            <Typography component="span" variant="caption" color="text.disabled" ml={0.5}>
-                              · {new Date(ms.targetDate).toLocaleDateString()}
-                            </Typography>
-                          )}
-                        </Typography>
-                        <Button
-                          size="small"
-                          startIcon={<AddIcon sx={{ fontSize: "12px !important" }} />}
-                          onClick={() => setAddingTaskTo(ms.id)}
-                          sx={{ fontSize: "0.7rem", py: 0, minWidth: 0, color: "text.disabled",
-                            "&:hover": { color: "text.secondary" } }}
-                        >
-                          Add task
-                        </Button>
-                      </Stack>
-
-                      {/* Tasks */}
-                      {ms.tasks.map((task) => {
-                        const status = taskStatus[task.id] ?? task.status;
-                        const isDone = status === "Done";
-                        const isNA = nextActionState[task.id] ?? task.isNextAction;
-                        return (
-                          <Stack key={task.id} direction="row" alignItems="center" gap={0.5}
-                            sx={{
-                              pl: 1, pr: 0.5, py: 0.25, borderRadius: 1,
-                              bgcolor: isNA ? "warning.main" + "0A" : "transparent",
-                              "&:hover": { bgcolor: "action.hover" },
+                      {/* Milestone header — edit mode */}
+                      {editingMilestoneId === ms.id ? (
+                        <Stack direction="row" alignItems="center" gap={0.75} mb={0.5}>
+                          <TextField
+                            autoFocus
+                            size="small"
+                            value={editingMilestoneTitle}
+                            onChange={(e) => setEditingMilestoneTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveMilestoneEdit(ms.id);
+                              if (e.key === "Escape") setEditingMilestoneId(null);
                             }}
-                          >
-                            <Checkbox size="small" checked={isDone}
-                              onChange={() => toggleTask(task.id, status)} sx={{ p: 0.5 }} />
-                            <Typography variant="body2" sx={{
-                              flex: 1,
-                              textDecoration: isDone ? "line-through" : "none",
-                              color: isDone ? "text.disabled" : "text.primary",
-                            }}>
-                              {task.title}
-                            </Typography>
-                            {task.estimatedMinutes && (
-                              <Typography variant="caption" color="text.disabled">
-                                {task.estimatedMinutes}m
+                            sx={{ flex: 1, "& .MuiInputBase-input": { py: 0.5, fontSize: "0.875rem" } }}
+                          />
+                          <TextField
+                            size="small"
+                            type="date"
+                            label="Deadline"
+                            value={editingMilestoneDate}
+                            onChange={(e) => setEditingMilestoneDate(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            sx={{ width: 140, "& .MuiInputBase-input": { py: 0.5, fontSize: "0.8rem" } }}
+                          />
+                          <IconButton size="small" color="primary" onClick={() => saveMilestoneEdit(ms.id)}>
+                            <CheckIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton size="small" onClick={() => setEditingMilestoneId(null)}>
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      ) : (
+                        /* Milestone header — normal mode */
+                        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}
+                          sx={{ "&:hover .ms-actions": { visibility: "visible" } }}
+                        >
+                          <Typography variant="caption" fontWeight={600} color="text.secondary"
+                            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            {ms.isComplete ? "✅" : "🏁"} {ms.title}
+                            {ms.targetDate && (
+                              <Typography component="span" variant="caption" color="text.disabled" ml={0.5}>
+                                · {new Date(ms.targetDate).toLocaleDateString()}
                               </Typography>
                             )}
-                            {/* ⚡ Next action toggle */}
-                            {!isDone && (
-                              <Tooltip title={isNA ? "Remove next action" : "Mark as next action"}>
-                                <IconButton size="small"
-                                  onClick={() => toggleNextAction(task.id, isNA)}
-                                  sx={{ p: 0.25, color: isNA ? "warning.main" : "action.disabled" }}
-                                >
-                                  <BoltIcon sx={{ fontSize: 15 }} />
+                          </Typography>
+                          <Stack direction="row" alignItems="center" gap={0}>
+                            <Stack className="ms-actions" direction="row" sx={{ visibility: "hidden" }}>
+                              <Tooltip title="Edit milestone">
+                                <IconButton size="small" onClick={() => startEditMilestone(ms)}
+                                  sx={{ p: 0.25, color: "text.disabled" }}>
+                                  <EditOutlinedIcon sx={{ fontSize: 14 }} />
                                 </IconButton>
                               </Tooltip>
-                            )}
+                              <Tooltip title="Delete milestone">
+                                <IconButton size="small" onClick={() => handleDeleteMilestone(ms.id)}
+                                  sx={{ p: 0.25, color: "text.disabled", "&:hover": { color: "error.main" } }}>
+                                  <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                            <Button
+                              size="small"
+                              startIcon={<AddIcon sx={{ fontSize: "12px !important" }} />}
+                              onClick={() => setAddingTaskTo(ms.id)}
+                              sx={{ fontSize: "0.7rem", py: 0, minWidth: 0, color: "text.disabled",
+                                "&:hover": { color: "text.secondary" } }}
+                            >
+                              Add task
+                            </Button>
                           </Stack>
-                        );
-                      })}
+                        </Stack>
+                      )}
+
+                      {/* Tasks */}
+                      {ms.tasks
+                        .filter((t) => !deletedTaskIds.includes(t.id))
+                        .map((task) => {
+                          const status = taskStatus[task.id] ?? task.status;
+                          const isDone = status === "Done";
+                          const isNA = nextActionState[task.id] ?? task.isNextAction;
+
+                          /* Edit mode */
+                          if (editingTaskId === task.id) {
+                            return (
+                              <Stack key={task.id} direction="row" alignItems="center" gap={0.5}
+                                sx={{ pl: 1, pr: 0.5, py: 0.25 }}>
+                                <Box sx={{ width: 28 }} />
+                                <TextField
+                                  autoFocus
+                                  size="small"
+                                  value={editingTaskTitle}
+                                  onChange={(e) => setEditingTaskTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") saveTaskTitle(task.id);
+                                    if (e.key === "Escape") setEditingTaskId(null);
+                                  }}
+                                  sx={{ flex: 1, "& .MuiInputBase-input": { py: 0.5, fontSize: "0.875rem" } }}
+                                />
+                                <IconButton size="small" color="primary" onClick={() => saveTaskTitle(task.id)}>
+                                  <CheckIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton size="small" onClick={() => setEditingTaskId(null)}>
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </Stack>
+                            );
+                          }
+
+                          /* Normal mode */
+                          return (
+                            <Stack key={task.id} direction="row" alignItems="center" gap={0.5}
+                              sx={{
+                                pl: 1, pr: 0.5, py: 0.25, borderRadius: 1,
+                                bgcolor: isNA ? "warning.main" + "0A" : "transparent",
+                                "&:hover": { bgcolor: "action.hover" },
+                                "&:hover .task-actions": { visibility: "visible" },
+                              }}
+                            >
+                              <Checkbox size="small" checked={isDone}
+                                onChange={() => toggleTask(task.id, status)} sx={{ p: 0.5 }} />
+                              <Typography variant="body2" sx={{
+                                flex: 1,
+                                textDecoration: isDone ? "line-through" : "none",
+                                color: isDone ? "text.disabled" : "text.primary",
+                              }}>
+                                {task.title}
+                              </Typography>
+                              {task.estimatedMinutes && (
+                                <Typography variant="caption" color="text.disabled">
+                                  {task.estimatedMinutes}m
+                                </Typography>
+                              )}
+                              {/* ⚡ Next action toggle */}
+                              {!isDone && (
+                                <Tooltip title={isNA ? "Remove next action" : "Mark as next action"}>
+                                  <IconButton size="small"
+                                    onClick={() => toggleNextAction(task.id, isNA)}
+                                    sx={{ p: 0.25, color: isNA ? "warning.main" : "action.disabled" }}
+                                  >
+                                    <BoltIcon sx={{ fontSize: 15 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              {/* Edit/delete actions */}
+                              <Stack className="task-actions" direction="row"
+                                sx={{ visibility: "hidden", flexShrink: 0 }}>
+                                <Tooltip title="Edit title">
+                                  <IconButton size="small"
+                                    onClick={() => startEditTask(task.id, task.title)}
+                                    sx={{ p: 0.25, color: "text.disabled" }}>
+                                    <EditOutlinedIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete task">
+                                  <IconButton size="small"
+                                    onClick={() => handleDeleteTask(task.id)}
+                                    sx={{ p: 0.25, color: "text.disabled", "&:hover": { color: "error.main" } }}>
+                                    <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Stack>
+                            </Stack>
+                          );
+                        })}
 
                       {/* Inline add-task form for this milestone */}
                       {addingTaskTo === ms.id && (
@@ -522,7 +724,7 @@ export default function GoalCard({ goal }: Props) {
                       )}
 
                       {/* Add task button if form not open */}
-                      {addingTaskTo !== ms.id && ms.tasks.length === 0 && (
+                      {addingTaskTo !== ms.id && ms.tasks.filter((t) => !deletedTaskIds.includes(t.id)).length === 0 && (
                         <Box sx={{ pl: 1 }}>
                           <Button size="small" startIcon={<AddIcon />}
                             onClick={() => setAddingTaskTo(ms.id)}
@@ -559,7 +761,7 @@ export default function GoalCard({ goal }: Props) {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={snackbar.undoId ? 5500 : 4000}
         onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
@@ -567,6 +769,13 @@ export default function GoalCard({ goal }: Props) {
           severity={snackbar.severity}
           onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
           variant="filled"
+          action={
+            snackbar.undoId ? (
+              <Button color="inherit" size="small" onClick={handleSnackbarUndo}>
+                Undo
+              </Button>
+            ) : undefined
+          }
         >
           {snackbar.message}
         </Alert>

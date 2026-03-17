@@ -137,6 +137,29 @@ public class GoalsController : ControllerBase
         );
     }
 
+    // PUT /api/v1/milestones/{id}
+    [HttpPut("/api/v1/milestones/{id:guid}")]
+    public async Task<IActionResult> UpdateMilestone(Guid id, [FromBody] UpdateMilestoneRequest body, CancellationToken ct)
+    {
+        var command = new UpdateMilestoneCommand(id, body.Title, body.TargetDate, body.IsComplete);
+        var result = await _mediator.Send(command, ct);
+        return result.Match(
+            milestone => Ok(Envelope.Success(milestone)),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
+        );
+    }
+
+    // DELETE /api/v1/milestones/{id}
+    [HttpDelete("/api/v1/milestones/{id:guid}")]
+    public async Task<IActionResult> DeleteMilestone(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new DeleteMilestoneCommand(id), ct);
+        return result.Match(
+            _ => Ok(Envelope.Success("Milestone deleted.")),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
+        );
+    }
+
     // POST /api/v1/goals/{id}/email?year=
     [HttpPost("{id:guid}/email")]
     public async Task<IActionResult> SendEmail(Guid id, [FromQuery] int year, CancellationToken ct)
@@ -183,3 +206,4 @@ public record SaveSmartRequest(
 public record SaveWoopRequest(int Year, string Wish, string Outcome, string Obstacle, string Plan);
 
 public record CreateMilestoneRequest(int Year, string Title, DateTime? TargetDate, int OrderIndex);
+public record UpdateMilestoneRequest(string? Title, DateTime? TargetDate, bool? IsComplete);

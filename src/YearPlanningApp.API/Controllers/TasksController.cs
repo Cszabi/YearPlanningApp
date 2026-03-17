@@ -70,6 +70,29 @@ public class TasksController : ControllerBase
             notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
         );
     }
+
+    // PUT /api/v1/tasks/{id}
+    [HttpPut("api/v1/tasks/{id:guid}")]
+    public async Task<IActionResult> UpdateTask(Guid id, [FromBody] UpdateTaskRequest body, CancellationToken ct)
+    {
+        var command = new UpdateTaskCommand(id, body.Title, body.DueDate, body.IsNextAction, body.Status);
+        var result = await _mediator.Send(command, ct);
+        return result.Match(
+            task => Ok(Envelope.Success(task)),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
+        );
+    }
+
+    // DELETE /api/v1/tasks/{id}
+    [HttpDelete("api/v1/tasks/{id:guid}")]
+    public async Task<IActionResult> DeleteTask(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new DeleteTaskCommand(id), ct);
+        return result.Match(
+            _ => Ok(Envelope.Success("Task deleted.")),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
+        );
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────────────────
@@ -83,3 +106,4 @@ public record CreateTaskRequest(
 
 public record UpdateTaskStatusRequest(string Status);
 public record SetNextActionRequest(bool IsNextAction);
+public record UpdateTaskRequest(string? Title, DateTime? DueDate, bool? IsNextAction, string? Status);
