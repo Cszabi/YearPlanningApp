@@ -68,6 +68,8 @@ function getSubtree(nodes: MindMapNodeDto[], rootId: string): MindMapNodeDto[] {
     .map((n) => (n.id === rootId ? { ...n, parentNodeId: null } : n));
 }
 
+const MAX_DEPTH = 3; // center (depth 0) + 3 rings visible at once
+
 function buildPartition(nodes: MindMapNodeDto[]): HNode | null {
   if (!nodes.length) return null;
   try {
@@ -76,6 +78,10 @@ function buildPartition(nodes: MindMapNodeDto[]): HNode | null {
       .id((d) => d.id)
       .parentId((d) => d.parentNodeId)(nodes);
     root.sum(() => 1).sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+    // Prune descendants beyond MAX_DEPTH so only 3 rings render at a time
+    root.each((node) => {
+      if (node.depth >= MAX_DEPTH) node.children = undefined;
+    });
     d3.partition<MindMapNodeDto>().size([2 * Math.PI, root.height + 1])(root);
     return root as unknown as HNode;
   } catch {
@@ -84,39 +90,51 @@ function buildPartition(nodes: MindMapNodeDto[]): HNode | null {
 }
 
 // ── Label word-wrap helper ────────────────────────────────────────────────────
-// Splits a label into up to 2 lines that fit within `arcLen` viewBox units,
-// then scales the font down if the 2 lines still overflow the ring height.
+// Tries progressively smaller font sizes (baseFontSize → MIN_FS) until the
+// word-wrapped lines fit both the arc length (width) and ring depth (height).
+// Never truncates with "…" — if even MIN_FS doesn't fit, renders as many
+// complete lines as the ring allows at MIN_FS.
 function wrapLabel(label: string, arcLen: number, ringW: number, baseFontSize: number): { lines: string[]; fs: number } {
-  const charW = baseFontSize * 0.56;
-  const maxChars = Math.max(5, Math.floor(arcLen / charW));
+  const MIN_FS = 13;
+  const availH = ringW * 0.78;
+
+  function doWrap(words: string[], maxChars: number): string[] {
+    const result: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length <= maxChars) {
+        current = candidate;
+      } else {
+        if (current) result.push(current);
+        current = word; // long single word gets its own line, no truncation
+      }
+    }
+    if (current) result.push(current);
+    return result;
+  }
 
   const words = label.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= maxChars) {
-      current = candidate;
-    } else {
-      if (current) lines.push(current);
-      current = word.length > maxChars ? word.slice(0, maxChars - 1) + "…" : word;
+
+  for (let fs = baseFontSize; fs >= MIN_FS; fs -= 1) {
+    const charW = fs * 0.56;
+    const maxChars = Math.max(2, Math.floor(arcLen / charW));
+    const lineH = fs * 1.25;
+    const lines = doWrap(words, maxChars);
+    const longestLineLen = Math.max(...lines.map((l) => l.length));
+    const totalH = lines.length * lineH;
+    if (longestLineLen <= maxChars && totalH <= availH) {
+      return { lines, fs };
     }
   }
-  if (current) lines.push(current);
 
-  // Cap at 2 lines; truncate the second if needed
-  if (lines.length > 2) {
-    lines.length = 2;
-    if (lines[1].length > maxChars - 1) lines[1] = lines[1].slice(0, maxChars - 2) + "…";
-  }
-
-  // Scale font down if total line height exceeds available ring depth
-  const lineH = baseFontSize * 1.25;
-  const totalH = lines.length * lineH;
-  const availH = ringW * 0.78;
-  const fs = totalH > availH && lines.length > 1 ? Math.max(14, baseFontSize * (availH / totalH)) : baseFontSize;
-
-  return { lines, fs };
+  // Fallback: MIN_FS, keep as many complete lines as fit vertically
+  const charW = MIN_FS * 0.56;
+  const maxChars = Math.max(2, Math.floor(arcLen / charW));
+  const lineH = MIN_FS * 1.25;
+  const lines = doWrap(words, maxChars);
+  const maxLineCount = Math.max(1, Math.floor(availH / lineH));
+  return { lines: lines.slice(0, maxLineCount), fs: MIN_FS };
 }
 
 // ── Sunburst SVG (pure rendering) ─────────────────────────────────────────────
@@ -128,9 +146,10 @@ interface SunburstSvgProps {
   onZoomOut: () => void;
   onContextMenu: (nodeId: string, x: number, y: number) => void;
   onRename: (nodeId: string, label: string) => void;
+  onHover: (label: string | null, x: number, y: number) => void;
 }
 
-function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRename }: SunburstSvgProps) {
+function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRename, onHover }: SunburstSvgProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const { arcs, centerR, centerLabel } = useMemo(() => {
@@ -208,8 +227,9 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
                 e.stopPropagation();
                 onContextMenu(d.data.id, e.clientX, e.clientY);
               }}
-              onMouseEnter={() => setHoveredId(d.data.id)}
-              onMouseLeave={() => setHoveredId(null)}
+              onMouseEnter={(e) => { setHoveredId(d.data.id); onHover(d.data.label, e.clientX, e.clientY); }}
+              onMouseMove={(e) => onHover(d.data.label, e.clientX, e.clientY)}
+              onMouseLeave={() => { setHoveredId(null); onHover(null, 0, 0); }}
             />
             {showLabel && (
               <text
@@ -305,6 +325,7 @@ export default function MindMapCanvas() {
   const [convertLifeArea, setConvertLifeArea] = useState("CareerWork");
   const [converting, setConverting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<{ label: string; x: number; y: number } | null>(null);
 
   // Load map
   useEffect(() => {
@@ -498,6 +519,7 @@ export default function MindMapCanvas() {
               onZoomOut={() => setFocusedId(focusedParentId)}
               onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
               onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
+              onHover={(label, x, y) => label ? setTooltip({ label, x, y }) : setTooltip(null)}
             />
           </g>
         </svg>
@@ -639,6 +661,32 @@ export default function MindMapCanvas() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* ── Hover tooltip ────────────────────────────────────────────────────── */}
+      {tooltip && (
+        <div
+          style={{
+            position: "fixed",
+            left: tooltip.x + 14,
+            top: tooltip.y - 32,
+            background: "rgba(26, 26, 46, 0.93)",
+            color: "#fff",
+            borderRadius: 8,
+            padding: "5px 11px",
+            fontSize: 13,
+            fontFamily: "Inter, sans-serif",
+            pointerEvents: "none",
+            zIndex: 2000,
+            maxWidth: 240,
+            boxShadow: "0 4px 14px rgba(0,0,0,0.28)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {tooltip.label}
+        </div>
+      )}
 
       {/* ── Delete confirm dialog ────────────────────────────────────────────── */}
       <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} maxWidth="xs" fullWidth>
