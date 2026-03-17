@@ -83,6 +83,42 @@ function buildPartition(nodes: MindMapNodeDto[]): HNode | null {
   }
 }
 
+// ── Label word-wrap helper ────────────────────────────────────────────────────
+// Splits a label into up to 2 lines that fit within `arcLen` viewBox units,
+// then scales the font down if the 2 lines still overflow the ring height.
+function wrapLabel(label: string, arcLen: number, ringW: number, baseFontSize: number): { lines: string[]; fs: number } {
+  const charW = baseFontSize * 0.56;
+  const maxChars = Math.max(5, Math.floor(arcLen / charW));
+
+  const words = label.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= maxChars) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      current = word.length > maxChars ? word.slice(0, maxChars - 1) + "…" : word;
+    }
+  }
+  if (current) lines.push(current);
+
+  // Cap at 2 lines; truncate the second if needed
+  if (lines.length > 2) {
+    lines.length = 2;
+    if (lines[1].length > maxChars - 1) lines[1] = lines[1].slice(0, maxChars - 2) + "…";
+  }
+
+  // Scale font down if total line height exceeds available ring depth
+  const lineH = baseFontSize * 1.25;
+  const totalH = lines.length * lineH;
+  const availH = ringW * 0.78;
+  const fs = totalH > availH && lines.length > 1 ? Math.max(14, baseFontSize * (availH / totalH)) : baseFontSize;
+
+  return { lines, fs };
+}
+
 // ── Sunburst SVG (pure rendering) ─────────────────────────────────────────────
 
 interface SunburstSvgProps {
@@ -127,9 +163,7 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
         const showLabel = arcLen > RADIUS * 0.07 && ringW > RADIUS * 0.025;
         const flip = midAngleDeg > 180;
         const labelTransform = `rotate(${midAngleDeg - 90}) translate(${midRPx},0) rotate(${flip ? 180 : 0})`;
-        const truncLabel =
-          d.data.label.length > 16 ? d.data.label.slice(0, 14) + "…" : d.data.label;
-        return { d, path, color: getBranchColor(d), showLabel, labelTransform, truncLabel };
+        return { d, path, color: getBranchColor(d), showLabel, labelTransform, arcLen, ringW };
       });
 
     return {
@@ -146,9 +180,12 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
 
   return (
     <>
-      {arcs.map(({ d, path, color, showLabel, labelTransform, truncLabel }) => {
+      {arcs.map(({ d, path, color, showLabel, labelTransform, arcLen, ringW }) => {
         const isHovered = hoveredId === d.data.id;
         const isGoal = d.data.nodeType === "Goal";
+        const rawLabel = isGoal ? "🎯 " + d.data.label : d.data.label;
+        const { lines, fs: lineFs } = wrapLabel(rawLabel, arcLen, ringW, fs);
+        const lineH = lineFs * 1.25;
         return (
           <g key={d.data.id}>
             <path
@@ -179,12 +216,16 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
                 transform={labelTransform}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={fs}
+                fontSize={lineFs}
                 fontWeight={d.depth === 1 ? 600 : 400}
                 fill={d.depth === 1 ? "white" : "#374151"}
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
-                {isGoal ? "🎯 " + truncLabel : truncLabel}
+                {lines.map((line, i) => (
+                  <tspan key={i} x="0" dy={i === 0 ? -(lines.length - 1) * lineH / 2 : lineH}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
             )}
           </g>
