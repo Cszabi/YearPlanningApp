@@ -23,7 +23,13 @@ export default function LoginPage() {
       });
       const auth = data.data;
       setAuth(
-        { id: auth.userId, email: auth.email, displayName: auth.displayName },
+        {
+          id: auth.userId,
+          email: auth.email,
+          displayName: auth.displayName,
+          role: auth.role ?? "User",
+          plan: auth.plan ?? "Free",
+        },
         auth.accessToken,
         auth.refreshToken
       );

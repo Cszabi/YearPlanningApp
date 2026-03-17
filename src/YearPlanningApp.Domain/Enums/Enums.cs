@@ -24,3 +24,6 @@ public enum FlowSessionOutcome { Fully = 1, Partially = 2, NotReally = 3 }
 public enum AmbientSoundMode { None = 1, BrownNoise = 2, WhiteNoise = 3, Nature = 4 }
 
 public enum ReviewType { Weekly = 1, Monthly = 2, Quarterly = 3, Annual = 4 }
+
+public enum UserRole { User = 0, Admin = 1 }
+public enum UserPlan { Free = 0, Pro = 1 }

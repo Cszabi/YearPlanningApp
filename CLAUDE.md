@@ -40,7 +40,7 @@ npm run lint
 **Four projects in Clean Architecture order (no skipping layers):**
 - `YearPlanningApp.Domain` — entities, enums, `IRepository<T>` interfaces (no dependencies)
 - `YearPlanningApp.Application` — CQRS handlers, validators, DTOs (depends only on Domain)
-- `YearPlanningApp.Infrastructure` — EF Core + Postgres, Redis, JWT, password hashing (implements Application interfaces)
+- `YearPlanningApp.Infrastructure` — EF Core + Postgres, Redis, JWT, SMTP email (implements Application interfaces)
 - `YearPlanningApp.API` — controllers, JWT middleware, Swagger, `ExceptionHandlingMiddleware`
 
 **Application layer conventions:**
@@ -55,11 +55,17 @@ npm run lint
 - UUID primary keys (`gen_random_uuid()`), all timestamps `TIMESTAMPTZ`, snake_case column names
 - `ICurrentUserService` extracts `UserId` (Guid) from `HttpContext` claims
 - `UnitOfWork` wraps all repositories; call `SaveChangesAsync` once per handler
+- Email: `IEmailService` abstraction (Application layer) implemented by `SmtpEmailService`; config via `Infrastructure/Settings/SmtpSettings.cs`
 
 **API conventions:**
 - All routes prefixed `/api/v1/`
 - Response envelope: `{ success, data, error, timestamp }`
 - `POST /flow-sessions` requires `Idempotency-Key` header (24h Redis TTL)
+- Admin endpoints (`/api/v1/admin/users`) protected by `[Authorize(Policy = "AdminOnly")]`
+
+**Domain — User entity fields:**
+- `Role: UserRole` — `User = 0`, `Admin = 1`; default `User`
+- `Plan: UserPlan` — `Free = 0`, `Pro = 1`; default `Free`
 
 **Test stack:** xUnit + NSubstitute + Shouldly. Tests live in `tests/YearPlanningApp.Application.Tests/` and `tests/YearPlanningApp.Domain.Tests/`.
 
@@ -71,10 +77,13 @@ npm run lint
 
 **Key files and folders:**
 - `src/api/client.ts` — Axios instance with JWT Bearer interceptor and concurrent-safe token refresh queue; on 401 it queues requests, refreshes once, then retries all
-- `src/stores/authStore.ts` — Zustand persisted store (`flowkigai-auth`); holds `user`, `accessToken`, `refreshToken`
+- `src/stores/authStore.ts` — Zustand persisted store (`flowkigai-auth`); holds `user`, `accessToken`, `refreshToken`; `user.role` is `"User"` or `"Admin"`
 - `src/stores/flowTimerStore.ts` — state machine: `idle → setup → running → paused → microreview → complete`
-- `src/api/` — one file per domain (`goalApi.ts`, `habitApi.ts`, …); each exports typed DTOs + api object
-- `src/components/layout/TabNav.tsx` — left sidebar nav (wraps all authenticated routes via `<Outlet>`)
+- `src/api/` — one file per domain (`goalApi.ts`, `habitApi.ts`, `adminApi.ts`, …); each exports typed DTOs + api object
+- `src/components/layout/TabNav.tsx` — left sidebar nav (wraps all authenticated routes via `<Outlet>`); shows Admin nav item only when `user.role === "Admin"`
+- `src/components/layout/AdminGuard.tsx` — redirects to `/` if `user.role !== "Admin"`; wraps `/admin` route
+- `src/pages/AdminPage.tsx` — user management: list users, view detail, upgrade plan Free→Pro, soft-delete
+- `src/pages/DocsPage.tsx` — renders `src/docs/philosophy.md` via `react-markdown` + `remark-gfm`
 - `src/pages/` — top-level page components; `src/components/{feature}/` for reusable sub-components
 - `src/theme/` — MUI theme; use theme tokens everywhere, never hardcode hex colors
 
@@ -92,6 +101,7 @@ npm run lint
 4. **Year-scoped uniqueness:** IkigaiJourney, NorthStar, MindMap — 1 per user per year (upsert, not multi-create)
 5. **Weekly Review:** 1 per user per ISO week (upsert)
 6. **Idempotency:** `POST /flow-sessions` requires `Idempotency-Key` header (24h Redis TTL)
+7. **Admin access:** `AdminOnly` policy checks `UserRole.Admin`; admin can list/delete users and upgrade plans
 
 ## Package Constraints
 
@@ -106,8 +116,16 @@ Core colours: Teal `#0D6E6E`, Amber `#F5A623`, Coral `#E8705A`, Off-white `#FAFA
 
 Typography: **functional UI uses Inter; contemplative screens (Ikigai rooms, North Star reveal, values reflection) use Georgia serif.** This distinction is intentional.
 
+## Production Deployment
+
+Full runbook in `DEPLOY.md`. Key points:
+- `docker compose -f docker-compose.prod.yml up -d --build` — builds React frontend + .NET API, runs EF migrations on startup
+- Do **not** run `dotnet build` locally before deploying — Docker builds clean on the VPS; local build fails if the API is already running (DLL locks)
+- Secrets live in `.env` (never commit); JWT secret must be ≥ 32 chars or the API refuses to start
+- Caddy handles TLS; Postgres and API are not exposed on host ports
+
 ## Development Discipline
 
-- **Follow phases in order (0→1→2→3→4→5→6).** Never skip ahead.
+- **All 17 session prompts (0.1–6.2) are complete.** Do not start new features without checking the spec files for the next phase.
 - **Commit after every session prompt.** Session prompts are in `year-planning-app-claude-code-prompts.md`.
 - **Session handoff:** at end of a long session, summarise what was completed, which files were created/modified, and what the next prompt should start with.

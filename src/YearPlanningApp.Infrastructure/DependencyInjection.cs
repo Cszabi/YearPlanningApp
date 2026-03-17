@@ -7,6 +7,7 @@ using YearPlanningApp.Domain.Entities;
 using YearPlanningApp.Domain.Interfaces;
 using YearPlanningApp.Infrastructure.Persistence;
 using YearPlanningApp.Infrastructure.Services;
+using YearPlanningApp.Infrastructure.Settings;
 
 namespace YearPlanningApp.Infrastructure;
 
@@ -22,6 +23,9 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
+        services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
+        services.AddTransient<IEmailService, SmtpEmailService>();
 
         return services;
     }

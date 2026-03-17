@@ -10,6 +10,7 @@ import { habitApi } from "@/api/habitApi";
 import GoalCard from "@/components/goals/GoalCard";
 import HabitCard from "@/components/goals/HabitCard";
 import GoalCreationWizard from "@/components/goals/GoalCreationWizard";
+import HabitCreationWizard from "@/components/goals/HabitCreationWizard";
 
 const YEAR = new Date().getFullYear();
 
@@ -35,6 +36,7 @@ const ENERGY_OPTIONS = [
 export default function GoalsPage() {
   const [tab, setTab]           = useState(0);
   const [showWizard, setShowWizard] = useState(false);
+  const [showHabitWizard, setShowHabitWizard] = useState(false);
   const [lifeArea, setLifeArea] = useState("");
   const [energyLevel, setEnergyLevel] = useState("");
 
@@ -70,6 +72,13 @@ export default function GoalsPage() {
     refetchHabits();
   }
 
+  function handleHabitWizardClose() {
+    setShowHabitWizard(false);
+    refetchHabits();
+  }
+
+  const onAddClick = () => tab === 1 ? setShowHabitWizard(true) : setShowWizard(true);
+
   return (
     <Box sx={{ height: "100%", overflow: "auto", bgcolor: "background.default" }}>
 
@@ -88,8 +97,8 @@ export default function GoalsPage() {
             </Typography>
           </Box>
           <Button variant="contained" startIcon={<AddIcon />}
-            onClick={() => setShowWizard(true)} sx={{ borderRadius: 6 }}>
-            New Goal
+            onClick={onAddClick} sx={{ borderRadius: 6 }}>
+            {tab === 1 ? "New Habit" : "New Goal"}
           </Button>
         </Stack>
 
@@ -176,7 +185,7 @@ export default function GoalsPage() {
                   Create a Repetitive goal to start tracking habits
                 </Typography>
                 <Button variant="contained" startIcon={<AddIcon />}
-                  onClick={() => setShowWizard(true)} sx={{ borderRadius: 6 }}>
+                  onClick={() => setShowHabitWizard(true)} sx={{ borderRadius: 6 }}>
                   Add a habit
                 </Button>
               </Box>
@@ -212,6 +221,7 @@ export default function GoalsPage() {
       </Box>
 
       {showWizard && <GoalCreationWizard onClose={handleWizardClose} />}
+      {showHabitWizard && <HabitCreationWizard onClose={handleHabitWizardClose} />}
     </Box>
   );
 }

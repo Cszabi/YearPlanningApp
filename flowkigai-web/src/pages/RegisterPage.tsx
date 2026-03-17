@@ -53,6 +53,8 @@ export default function RegisterPage() {
           email: auth.email,
           displayName: auth.displayName,
           calendarProvider: auth.calendarProvider ?? undefined,
+          role: auth.role ?? "User",
+          plan: auth.plan ?? "Free",
         },
         auth.accessToken,
         auth.refreshToken

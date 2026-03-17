@@ -6,6 +6,8 @@ interface User {
   email: string;
   displayName: string;
   calendarProvider?: string;
+  role: "User" | "Admin";
+  plan: "Free" | "Pro";
 }
 
 interface AuthState {

@@ -13,6 +13,13 @@ services:
     depends_on:
       - api
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   api:
     build:
       context: .
@@ -22,13 +29,22 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=flowkigai;Username=flowkigai_user;Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__Redis=redis:6379
       - Jwt__Issuer=flowkigai
       - Jwt__Audience=flowkigai-web
       - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Smtp__Host=${SMTP_HOST:-smtp.example.com}
+      - Smtp__Port=${SMTP_PORT:-587}
+      - Smtp__UseSsl=${SMTP_USE_SSL:-false}
+      - Smtp__UserName=${SMTP_USER:-}
+      - Smtp__Password=${SMTP_PASSWORD:-}
+      - Smtp__FromAddress=${SMTP_FROM_ADDRESS:-noreply@flowkigai.app}
+      - Smtp__FromName=${SMTP_FROM_NAME:-Flowkigai}
     volumes:
       - dataprotection_keys:/root/.aspnet/DataProtection-Keys
     depends_on:
       - postgres
+      - redis
 
   postgres:
     image: postgres:16-alpine
@@ -42,6 +58,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   caddy_data:
   caddy_config:
   dataprotection_keys:

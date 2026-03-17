@@ -57,6 +57,6 @@ public class RefreshTokenCommandHandler
         _uow.Users.Update(user);
         await _uow.SaveChangesAsync(ct);
 
-        return new AuthResponse(user.Id, user.Email, user.DisplayName, accessToken, rawRefresh, expiresAt, user.CalendarProvider);
+        return new AuthResponse(user.Id, user.Email, user.DisplayName, accessToken, rawRefresh, expiresAt, user.CalendarProvider, user.Role.ToString(), user.Plan.ToString());
     }
 }

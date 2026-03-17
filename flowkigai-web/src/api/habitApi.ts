@@ -28,6 +28,21 @@ export const habitApi = {
     return data.data as HabitDto[];
   },
 
+  createHabit: async (body: {
+    goalId: string;
+    year: number;
+    title: string;
+    frequency: string;
+    minimumViableDose: string;
+    idealDose?: string;
+    trigger?: string;
+    celebrationRitual?: string;
+    trackingMethod: string;
+  }): Promise<HabitDto> => {
+    const { data } = await api.post("/habits", body);
+    return data.data as HabitDto;
+  },
+
   logHabit: async (id: string, notes?: string): Promise<HabitDto> => {
     const { data } = await api.post(`/habits/${id}/log`, { notes: notes ?? null });
     return data.data as HabitDto;

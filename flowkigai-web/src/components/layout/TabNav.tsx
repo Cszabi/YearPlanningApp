@@ -23,6 +23,7 @@ const tabs = [
   { path: "/tasks",     label: "Tasks",       icon: "✅" },
   { path: "/reviews",   label: "Reviews",     icon: "🔄" },
   { path: "/dashboard", label: "Dashboard",   icon: "📊" },
+  { path: "/docs",      label: "About",       icon: "📖" },
 ];
 
 export default function TabNav() {
@@ -91,6 +92,30 @@ export default function TabNav() {
               </ListItemButton>
             );
           })}
+          {user.role === "Admin" && (
+            <ListItemButton
+              component={NavLink}
+              to="/admin"
+              sx={{
+                mx: 1,
+                mb: 0.25,
+                borderRadius: 2,
+                "&.active": {
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  "& .MuiListItemIcon-root": { color: "primary.contrastText" },
+                  "& .MuiListItemText-primary": { color: "primary.contrastText", fontWeight: 600 },
+                },
+                "&:not(.active):hover": { bgcolor: "action.hover" },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 32, fontSize: 16 }}>⚙️</ListItemIcon>
+              <ListItemText
+                primary="Admin"
+                primaryTypographyProps={{ fontSize: "0.875rem" }}
+              />
+            </ListItemButton>
+          )}
         </List>
 
         {/* Bottom actions */}

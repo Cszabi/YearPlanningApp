@@ -145,4 +145,8 @@ export const goalApi = {
     const { data } = await api.post(`/goals/${goalId}/milestones/${milestoneId}/tasks`, body);
     return data.data as TaskDto;
   },
+
+  sendEmail: async (goalId: string, year: number): Promise<void> => {
+    await api.post(`/goals/${goalId}/email?year=${year}`);
+  },
 };

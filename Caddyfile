@@ -1,6 +1,3 @@
-# Replace your-domain.com with your actual domain for automatic HTTPS via Let's Encrypt.
-# For IP-only testing (HTTP only), use:  :80 { reverse_proxy api:8080 }
-
-your-domain.com {
+:80 {
     reverse_proxy api:8080
 }

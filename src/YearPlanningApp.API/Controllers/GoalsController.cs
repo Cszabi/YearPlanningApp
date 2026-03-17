@@ -136,6 +136,18 @@ public class GoalsController : ControllerBase
             notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
         );
     }
+
+    // POST /api/v1/goals/{id}/email?year=
+    [HttpPost("{id:guid}/email")]
+    public async Task<IActionResult> SendEmail(Guid id, [FromQuery] int year, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new SendGoalEmailCommand(id, year), ct);
+        return result.Match(
+            _       => Ok(Envelope.Success("Email sent.")),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound)),
+            conflict => Conflict(Envelope.Conflict(conflict.Message))
+        );
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────────────────

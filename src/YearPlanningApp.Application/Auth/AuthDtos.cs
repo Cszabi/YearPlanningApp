@@ -7,4 +7,6 @@ public record AuthResponse(
     string AccessToken,
     string RefreshToken,
     DateTime AccessTokenExpiresAt,
-    string? CalendarProvider);
+    string? CalendarProvider,
+    string Role,
+    string Plan);

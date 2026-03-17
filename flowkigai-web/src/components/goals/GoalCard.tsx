@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   Box, Card, CardContent, Chip, LinearProgress, Typography,
   Stack, Divider, IconButton, Checkbox, Tooltip, Collapse,
-  Menu, MenuItem, TextField, Button, CircularProgress,
+  Menu, MenuItem, TextField, Button, CircularProgress, Snackbar, Alert,
 } from "@mui/material";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -22,6 +22,13 @@ const LIFE_AREA_LABELS: Record<string, string> = {
   RelationshipsFamily: "Relationships", LearningGrowth: "Learning & Growth",
   Finance: "Finance",                   CreativityHobbies: "Creativity",
   EnvironmentLifestyle: "Environment",  ContributionPurpose: "Contribution",
+};
+
+const LIFE_AREA_EMOJIS: Record<string, string> = {
+  CareerWork: "💼",          HealthBody: "💪",
+  RelationshipsFamily: "❤️", LearningGrowth: "📚",
+  Finance: "💰",             CreativityHobbies: "🎨",
+  EnvironmentLifestyle: "🌿", ContributionPurpose: "🌍",
 };
 
 const LIFE_AREA_COLORS: Record<string, string> = {
@@ -243,6 +250,10 @@ export default function GoalCard({ goal }: Props) {
   const [addingTaskTo, setAddingTaskTo] = useState<string | null>(null); // milestoneId
   const [addingMilestone, setAddingMilestone] = useState(false);
   const [addingFirstTask, setAddingFirstTask] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; severity: "success" | "error"; message: string }>({
+    open: false, severity: "success", message: "",
+  });
 
   const areaColor = LIFE_AREA_COLORS[goal.lifeArea] ?? "#0D6E6E";
   const totalTasks = goal.milestones.reduce((n, m) => n + m.tasks.length, 0);
@@ -277,6 +288,19 @@ export default function GoalCard({ goal }: Props) {
     setMenuAnchor(null);
     await goalApi.updateStatus(goal.id, YEAR, status).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+  }
+
+  async function handleSendEmail() {
+    setMenuAnchor(null);
+    setEmailSending(true);
+    try {
+      await goalApi.sendEmail(goal.id, YEAR);
+      setSnackbar({ open: true, severity: "success", message: "Goal details sent to your email!" });
+    } catch {
+      setSnackbar({ open: true, severity: "error", message: "Failed to send email. Check SMTP settings." });
+    } finally {
+      setEmailSending(false);
+    }
   }
 
   const hasMilestones = goal.milestones.length > 0;
@@ -315,12 +339,17 @@ export default function GoalCard({ goal }: Props) {
             {goal.status !== "Paused"   && <MenuItem onClick={() => handleStatusChange("Paused")}>Pause goal</MenuItem>}
             {goal.status === "Paused"   && <MenuItem onClick={() => handleStatusChange("Active")}>Resume goal</MenuItem>}
             {goal.status !== "Achieved" && <MenuItem onClick={() => handleStatusChange("Achieved")}>Mark achieved ✅</MenuItem>}
+            <MenuItem onClick={handleSendEmail} disabled={emailSending}>
+              {emailSending ? "Sending…" : "Send to my email 📧"}
+            </MenuItem>
             <MenuItem onClick={() => handleStatusChange("Dropped")} sx={{ color: "error.main" }}>Drop goal</MenuItem>
           </Menu>
 
           {/* Tags row */}
           <Stack direction="row" flexWrap="wrap" gap={0.75} mb={1.5}>
-            <Chip label={LIFE_AREA_LABELS[goal.lifeArea] ?? goal.lifeArea} size="small"
+            <Chip
+              label={`${LIFE_AREA_EMOJIS[goal.lifeArea] ?? ""} ${LIFE_AREA_LABELS[goal.lifeArea] ?? goal.lifeArea}`.trim()}
+              size="small"
               sx={{ bgcolor: areaColor + "22", color: areaColor, fontWeight: 500 }} />
             <Chip label={goal.energyLevel} size="small"
               color={ENERGY_COLOR[goal.energyLevel] ?? "default"} variant="outlined" />
@@ -527,6 +556,21 @@ export default function GoalCard({ goal }: Props) {
           )}
         </CardContent>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Card>
   );
 }

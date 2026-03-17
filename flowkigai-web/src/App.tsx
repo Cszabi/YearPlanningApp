@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import TabNav from "@/components/layout/TabNav";
+import AdminGuard from "@/components/layout/AdminGuard";
+import AdminPage from "@/pages/AdminPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import IkigaiPage from "@/pages/IkigaiPage";
@@ -12,6 +14,7 @@ import FlowPage from "@/pages/FlowPage";
 import TasksPage from "@/pages/TasksPage";
 import ReviewsPage from "@/pages/ReviewsPage";
 import DashboardPage from "@/pages/DashboardPage";
+import DocsPage from "@/pages/DocsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +47,8 @@ export default function App() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/docs" element={<DocsPage />} />
+            <Route path="/admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
           </Route>
         </Routes>
       </BrowserRouter>

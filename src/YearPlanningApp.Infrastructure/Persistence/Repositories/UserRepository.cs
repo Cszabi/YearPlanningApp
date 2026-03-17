@@ -13,4 +13,16 @@ public class UserRepository : BaseRepository<User>, IUserRepository
 
     public async Task<User?> GetByRefreshTokenAsync(string hashedToken, CancellationToken ct = default)
         => await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == hashedToken, ct);
+
+    public async Task<IReadOnlyList<User>> GetAllWithCountsAsync(CancellationToken ct = default)
+        => await _context.Users
+            .Include(u => u.Goals)
+            .Include(u => u.FlowSessions)
+            .ToListAsync(ct);
+
+    public async Task<User?> GetWithDetailsAsync(Guid id, CancellationToken ct = default)
+        => await _context.Users
+            .Include(u => u.Goals)
+            .Include(u => u.FlowSessions)
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
 }
