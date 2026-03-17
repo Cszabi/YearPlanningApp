@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import { useAuthStore } from "@/stores/authStore";
+import FlowkigaiLogo from "@/components/layout/FlowkigaiLogo";
 import content from "@/docs/philosophy.md?raw";
 
 // ── Dark theme tokens ─────────────────────────────────────────────────────────
@@ -99,8 +100,8 @@ export default function LandingPage() {
         className="sticky top-0 z-50 flex items-center justify-between px-6 py-4"
         style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}
       >
-        <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: "1.25rem", color: C.text }}>
-          Flowkigai
+        <span style={{ color: C.text }}>
+          <FlowkigaiLogo size="md" />
         </span>
         <div className="flex items-center gap-3">
           <Link
@@ -123,12 +124,9 @@ export default function LandingPage() {
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <section className="text-center px-6 py-20">
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
-          <h1
-            className="text-5xl font-bold mb-4"
-            style={{ fontFamily: "Georgia, serif", color: C.text, lineHeight: 1.2 }}
-          >
-            Flowkigai
-          </h1>
+          <div className="flex justify-center mb-4" style={{ color: C.text }}>
+            <FlowkigaiLogo size="lg" showWordmark={true} />
+          </div>
           <p className="text-lg mb-8" style={{ color: C.muted, lineHeight: 1.75 }}>
             A year planning system that starts with meaning and ends with momentum.
             Built on Ikigai, Deep Work, and the science of flow.
@@ -171,8 +169,8 @@ export default function LandingPage() {
       {/* ── Footer ──────────────────────────────────────────────────────────── */}
       <footer style={{ background: C.bg, borderTop: `1px solid ${C.border}` }}>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px", textAlign: "center" }}>
-          <span style={{ fontFamily: "Georgia, serif", fontWeight: 600, fontSize: "1rem", color: C.text }}>
-            Flowkigai
+          <span style={{ color: C.text }}>
+            <FlowkigaiLogo size="sm" />
           </span>
           <p style={{ color: C.muted, fontSize: "0.8rem", marginTop: 8 }}>
             © {new Date().getFullYear()} Flowkigai. A year planning system built on meaning.

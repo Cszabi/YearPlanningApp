@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import FlowkigaiLogo from "@/components/layout/FlowkigaiLogo";
 
 const CALENDAR_OPTIONS = [
   { value: "google",  label: "Google Calendar",  icon: "📅" },
@@ -88,12 +89,9 @@ export default function RegisterPage() {
             ← Back to home
           </Link>
         )}
-        <h1
-          className="text-3xl font-semibold text-center mb-2"
-          style={{ color: "#0D6E6E" }}
-        >
-          Flowkigai
-        </h1>
+        <div className="flex justify-center mb-2" style={{ color: "#0D6E6E" }}>
+          <FlowkigaiLogo size="md" />
+        </div>
 
         {step === "account" ? (
           <>

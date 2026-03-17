@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { useAuthStore } from "@/stores/authStore";
+import FlowkigaiLogo from "@/components/layout/FlowkigaiLogo";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -51,12 +52,9 @@ export default function LoginPage() {
         <Link to="/" className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-6">
           ← Back to home
         </Link>
-        <h1
-          className="text-3xl font-semibold text-center mb-2"
-          style={{ color: "#0D6E6E" }}
-        >
-          Flowkigai
-        </h1>
+        <div className="flex justify-center mb-2" style={{ color: "#0D6E6E" }}>
+          <FlowkigaiLogo size="md" />
+        </div>
         <p className="text-center text-gray-500 mb-8 text-sm">
           Sign in to your account
         </p>
