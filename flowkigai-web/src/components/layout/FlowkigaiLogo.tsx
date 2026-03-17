@@ -26,6 +26,7 @@ export default function FlowkigaiLogo({
         src="/icons/flowkigai-logo.png"
         alt="Flowkigai logo"
         style={{ height, width: "auto" }}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
       />
       {showWordmark && (
         <span
