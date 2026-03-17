@@ -2,74 +2,87 @@ import { Navigate, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from "@mui/material";
 import { useAuthStore } from "@/stores/authStore";
 import content from "@/docs/philosophy.md?raw";
 
-// ── Markdown renderer ─────────────────────────────────────────────────────────
+// ── Dark theme tokens ─────────────────────────────────────────────────────────
+const C = {
+  bg:     "#0F1117",
+  bgAlt:  "#161B27",
+  card:   "#1E2433",
+  border: "#2A3146",
+  text:   "#F0F0EC",
+  muted:  "#9BA3B8",
+  accent: "#0D9E9E",
+} as const;
+
+// ── Markdown renderer (dark-themed, no MUI dependency) ────────────────────────
 const mdComponents: Components = {
   h1: ({ children }) => (
-    <Typography variant="h4" component="h1" fontFamily="Georgia, serif" fontWeight={700} mb={2} mt={1}>
+    <h1 style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: "1.875rem", color: C.text, marginBottom: 8, marginTop: 4 }}>
       {children}
-    </Typography>
+    </h1>
   ),
   h2: ({ children }) => (
-    <Typography variant="h5" component="h2" fontWeight={700} mt={5} mb={1.5}
-      sx={{ pl: 1.5, borderLeft: "3px solid", borderColor: "primary.main", color: "text.primary" }}>
+    <h2 style={{ fontWeight: 700, fontSize: "1.375rem", color: C.text, marginTop: 40, marginBottom: 12, paddingLeft: 12, borderLeft: `3px solid ${C.accent}` }}>
       {children}
-    </Typography>
+    </h2>
   ),
   h3: ({ children }) => (
-    <Typography variant="h6" component="h3" fontWeight={600} mt={3} mb={1}>{children}</Typography>
+    <h3 style={{ fontWeight: 600, fontSize: "1.1rem", color: C.text, marginTop: 24, marginBottom: 8 }}>
+      {children}
+    </h3>
   ),
   p: ({ children }) => (
-    <Typography variant="body1" component="p" lineHeight={1.8} mb={1.5} color="text.primary">
+    <p style={{ lineHeight: 1.8, marginBottom: 12, color: C.text, fontSize: "0.95rem" }}>
       {children}
-    </Typography>
+    </p>
   ),
   blockquote: ({ children }) => (
-    <Paper elevation={0} sx={{ borderLeft: "3px solid", borderColor: "primary.main", pl: 2, pr: 1, py: 1, my: 2, bgcolor: "action.hover", fontStyle: "italic" }}>
+    <blockquote style={{ borderLeft: `3px solid ${C.accent}`, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8, margin: "16px 0", background: C.card, fontStyle: "italic", color: C.muted, borderRadius: "0 4px 4px 0" }}>
       {children}
-    </Paper>
+    </blockquote>
   ),
   table: ({ children }) => (
-    <TableContainer component={Paper} elevation={0} sx={{ my: 2, border: 1, borderColor: "divider" }}>
-      <Table size="small">{children}</Table>
-    </TableContainer>
+    <div style={{ overflowX: "auto", margin: "16px 0", border: `1px solid ${C.border}`, borderRadius: 6 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>{children}</table>
+    </div>
   ),
-  thead: ({ children }) => <TableHead sx={{ bgcolor: "action.selected" }}>{children}</TableHead>,
-  tbody: ({ children }) => <TableBody>{children}</TableBody>,
-  tr: ({ children }) => <TableRow>{children}</TableRow>,
-  th: ({ children }) => <TableCell sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{children}</TableCell>,
-  td: ({ children }) => <TableCell sx={{ fontSize: "0.875rem", verticalAlign: "top" }}>{children}</TableCell>,
-  strong: ({ children }) => <Box component="strong" sx={{ fontWeight: 700 }}>{children}</Box>,
-  em: ({ children }) => <Box component="em" sx={{ fontStyle: "italic" }}>{children}</Box>,
-  hr: () => <Box component="hr" sx={{ border: "none", borderTop: 1, borderColor: "divider", my: 3 }} />,
-  code: ({ children }) => (
-    <Box component="code" sx={{ fontFamily: "monospace", fontSize: "0.85rem", bgcolor: "action.hover", px: 0.5, py: 0.25, borderRadius: 0.5 }}>
+  thead: ({ children }) => <thead style={{ background: C.card }}>{children}</thead>,
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children }) => <tr style={{ borderBottom: `1px solid ${C.border}` }}>{children}</tr>,
+  th: ({ children }) => (
+    <th style={{ fontWeight: 700, fontSize: "0.85rem", padding: "8px 12px", color: C.text, textAlign: "left" }}>
       {children}
-    </Box>
+    </th>
+  ),
+  td: ({ children }) => (
+    <td style={{ fontSize: "0.875rem", padding: "8px 12px", color: C.muted, verticalAlign: "top" }}>
+      {children}
+    </td>
+  ),
+  strong: ({ children }) => <strong style={{ fontWeight: 700, color: C.text }}>{children}</strong>,
+  em: ({ children }) => <em style={{ fontStyle: "italic" }}>{children}</em>,
+  hr: () => <hr style={{ border: "none", borderTop: `1px solid ${C.border}`, margin: "24px 0" }} />,
+  code: ({ children }) => (
+    <code style={{ fontFamily: "monospace", fontSize: "0.85rem", background: C.card, padding: "2px 4px", borderRadius: 4, color: C.accent }}>
+      {children}
+    </code>
   ),
   pre: ({ children }) => (
-    <Paper elevation={0} component="pre" sx={{ p: 2, my: 2, overflow: "auto", bgcolor: "action.hover", border: 1, borderColor: "divider", borderRadius: 1, fontFamily: "monospace", fontSize: "0.85rem", lineHeight: 1.6 }}>
+    <pre style={{ padding: 16, margin: "16px 0", overflowX: "auto", background: C.card, border: `1px solid ${C.border}`, borderRadius: 4, fontFamily: "monospace", fontSize: "0.85rem", lineHeight: 1.6, color: C.text }}>
       {children}
-    </Paper>
+    </pre>
   ),
+  ul: ({ children }) => <ul style={{ paddingLeft: 24, marginBottom: 16 }}>{children}</ul>,
+  ol: ({ children }) => <ol style={{ paddingLeft: 24, marginBottom: 16 }}>{children}</ol>,
   li: ({ children }) => (
-    <Typography component="li" variant="body1" lineHeight={1.8} sx={{ mb: 0.5 }}>{children}</Typography>
+    <li style={{ lineHeight: 1.8, marginBottom: 4, color: C.text, fontSize: "0.95rem" }}>
+      {children}
+    </li>
   ),
   img: ({ src, alt }) => (
-    <Box component="img" src={src} alt={alt} sx={{ display: "block", width: "100%", maxHeight: 340, objectFit: "cover", borderRadius: 3, my: 3, boxShadow: 2 }} />
+    <img src={src} alt={alt} style={{ display: "block", width: "100%", maxHeight: 340, objectFit: "cover", borderRadius: 12, margin: "24px 0", boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }} />
   ),
 };
 
@@ -79,26 +92,28 @@ export default function LandingPage() {
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="min-h-screen" style={{ background: "#FAFAF8", fontFamily: "Inter, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "Inter, sans-serif" }}>
 
       {/* ── Navbar ──────────────────────────────────────────────────────────── */}
       <nav
         className="sticky top-0 z-50 flex items-center justify-between px-6 py-4"
-        style={{ background: "#FAFAF8", borderBottom: "1px solid #E8EEEE" }}
+        style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}
       >
-        <span className="text-xl font-bold" style={{ color: "#0D6E6E" }}>Flowkigai</span>
+        <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: "1.25rem", color: C.text }}>
+          Flowkigai
+        </span>
         <div className="flex items-center gap-3">
           <Link
             to="/login"
-            className="text-sm font-medium hover:underline"
-            style={{ color: "#0D6E6E" }}
+            className="text-sm font-medium transition-colors hover:text-[#F0F0EC]"
+            style={{ color: C.muted }}
           >
             Sign In
           </Link>
           <Link
             to="/register"
             className="text-sm font-semibold text-white px-4 py-2 rounded-full transition-opacity hover:opacity-90"
-            style={{ backgroundColor: "#0D6E6E" }}
+            style={{ backgroundColor: C.accent }}
           >
             Get Started
           </Link>
@@ -110,11 +125,11 @@ export default function LandingPage() {
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <h1
             className="text-5xl font-bold mb-4"
-            style={{ fontFamily: "Georgia, serif", color: "#1A1A2E", lineHeight: 1.2 }}
+            style={{ fontFamily: "Georgia, serif", color: C.text, lineHeight: 1.2 }}
           >
             Flowkigai
           </h1>
-          <p className="text-lg mb-8" style={{ color: "#4B5563", lineHeight: 1.75 }}>
+          <p className="text-lg mb-8" style={{ color: C.muted, lineHeight: 1.75 }}>
             A year planning system that starts with meaning and ends with momentum.
             Built on Ikigai, Deep Work, and the science of flow.
           </p>
@@ -124,14 +139,14 @@ export default function LandingPage() {
             <Link
               to="/register"
               className="w-full sm:w-auto px-8 py-3 rounded-full text-white text-sm font-semibold text-center transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#0D6E6E" }}
+              style={{ backgroundColor: C.accent }}
             >
               Get Started
             </Link>
             <Link
               to="/login"
-              className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold text-center border-2 transition-colors hover:bg-[#0D6E6E0d]"
-              style={{ color: "#0D6E6E", borderColor: "#0D6E6E" }}
+              className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold text-center border-2 transition-colors hover:bg-[#0D9E9E22]"
+              style={{ color: C.accent, borderColor: C.accent }}
             >
               Sign In
             </Link>
@@ -144,16 +159,26 @@ export default function LandingPage() {
         style={{
           maxWidth: 760,
           margin: "0 auto",
-          padding: "0 24px 80px",
-          borderTop: "1px solid #E8EEEE",
+          padding: "40px 24px 80px",
+          borderTop: `1px solid ${C.border}`,
         }}
       >
-        <Box pt={5}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-            {content}
-          </ReactMarkdown>
-        </Box>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+          {content}
+        </ReactMarkdown>
       </div>
+
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <footer style={{ background: C.bg, borderTop: `1px solid ${C.border}` }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px", textAlign: "center" }}>
+          <span style={{ fontFamily: "Georgia, serif", fontWeight: 600, fontSize: "1rem", color: C.text }}>
+            Flowkigai
+          </span>
+          <p style={{ color: C.muted, fontSize: "0.8rem", marginTop: 8 }}>
+            © {new Date().getFullYear()} Flowkigai. A year planning system built on meaning.
+          </p>
+        </div>
+      </footer>
 
     </div>
   );
