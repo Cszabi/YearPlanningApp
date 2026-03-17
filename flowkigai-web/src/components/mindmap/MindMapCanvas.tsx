@@ -343,6 +343,12 @@ export default function MindMapCanvas() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ label: string; x: number; y: number } | null>(null);
 
+  const handleHover = useCallback(
+    (label: string | null, x: number, y: number) =>
+      label ? setTooltip({ label, x, y }) : setTooltip(null),
+    []
+  );
+
   // Load map
   useEffect(() => {
     async function load() {
@@ -535,8 +541,7 @@ export default function MindMapCanvas() {
               onZoomOut={() => setFocusedId(focusedParentId)}
               onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
               onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
-              onHover={useCallback((label: string | null, x: number, y: number) =>
-                label ? setTooltip({ label, x, y }) : setTooltip(null), [])}
+              onHover={handleHover}
             />
           </g>
         </svg>
