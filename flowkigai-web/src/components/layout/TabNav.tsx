@@ -23,7 +23,6 @@ const tabs = [
   { path: "/tasks",     label: "Tasks",       icon: "✅" },
   { path: "/reviews",   label: "Reviews",     icon: "🔄" },
   { path: "/dashboard", label: "Dashboard",   icon: "📊" },
-  { path: "/docs",      label: "About",       icon: "📖" },
 ];
 
 export default function TabNav() {
@@ -33,7 +32,7 @@ export default function TabNav() {
   const location = useLocation();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
 
   return (
     <Box sx={{ display: "flex", height: "100vh", bgcolor: "background.default" }}>

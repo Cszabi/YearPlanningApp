@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import TabNav from "@/components/layout/TabNav";
 import AdminGuard from "@/components/layout/AdminGuard";
-import AdminPage from "@/pages/AdminPage";
+import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import IkigaiPage from "@/pages/IkigaiPage";
@@ -14,7 +14,7 @@ import FlowPage from "@/pages/FlowPage";
 import TasksPage from "@/pages/TasksPage";
 import ReviewsPage from "@/pages/ReviewsPage";
 import DashboardPage from "@/pages/DashboardPage";
-import DocsPage from "@/pages/DocsPage";
+import AdminPage from "@/pages/AdminPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,11 +34,14 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/docs" element={<Navigate to="/" replace />} />
 
+          {/* Protected routes — TabNav redirects to / if not authenticated */}
           <Route element={<TabNav />}>
-            <Route path="/" element={<Navigate to="/ikigai" replace />} />
             <Route path="/ikigai" element={<IkigaiPage />} />
             <Route path="/map" element={<MindMapPage />} />
             <Route path="/goals" element={<GoalsPage />} />
@@ -47,7 +50,6 @@ export default function App() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/docs" element={<DocsPage />} />
             <Route path="/admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
           </Route>
         </Routes>

@@ -83,6 +83,11 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-off-white px-4">
       <div className="w-full max-w-sm">
+        {step === "account" && (
+          <Link to="/" className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-6">
+            ← Back to home
+          </Link>
+        )}
         <h1
           className="text-3xl font-semibold text-center mb-2"
           style={{ color: "#0D6E6E" }}
