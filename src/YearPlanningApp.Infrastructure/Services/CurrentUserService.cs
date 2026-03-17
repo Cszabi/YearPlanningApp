@@ -29,7 +29,7 @@ public class CurrentUserService : ICurrentUserService
         => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
 
     public bool IsAdmin
-        => _httpContextAccessor.HttpContext?.User.FindFirstValue("role") == "Admin";
+        => _httpContextAccessor.HttpContext?.User.IsInRole("Admin") ?? false;
 
     public string Plan
         => _httpContextAccessor.HttpContext?.User.FindFirstValue("plan") ?? "Free";
