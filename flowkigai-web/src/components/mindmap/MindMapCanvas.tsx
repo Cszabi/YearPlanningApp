@@ -14,12 +14,13 @@ import {
   Button, TextField, MenuItem, Select, FormControl, InputLabel,
   Typography, Stack, Divider, Paper, IconButton, Box,
   List, ListItemButton, ListItemText,
-  ToggleButtonGroup, ToggleButton,
+  ToggleButtonGroup, ToggleButton, Alert,
 } from "@mui/material";
 import { IKIGAI_CATEGORY_CONFIG } from "./nodes";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
+import { habitApi } from "@/api/habitApi";
 import { LIFE_AREA_COLORS, LIFE_AREA_NAMES } from "./nodes";
 import RadialTreeView from "./RadialTreeView";
 import TidyTreeView from "./TidyTreeView";
@@ -358,6 +359,9 @@ export default function MindMapCanvas() {
   const [convertGoalType, setConvertGoalType] = useState<string | null>(null);
   const [convertLifeArea, setConvertLifeArea] = useState("CareerWork");
   const [converting, setConverting] = useState(false);
+  const [habitFrequency, setHabitFrequency] = useState("Daily");
+  const [habitMvd, setHabitMvd] = useState("");
+  const [convertError, setConvertError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ label: string; x: number; y: number } | null>(null);
 
@@ -480,15 +484,31 @@ export default function MindMapCanvas() {
   // ── Convert to goal ───────────────────────────────────────────────────────────
   async function handleConvertConfirm() {
     if (!convertModal || !convertGoalType) return;
+    if (convertGoalType === "Repetitive" && !habitMvd.trim()) {
+      setConvertError("Please enter a minimal viable dose.");
+      return;
+    }
     setConverting(true);
+    setConvertError(null);
     try {
-      await mindMapApi.convertToGoal(YEAR, convertModal.nodeId, convertGoalType, convertLifeArea);
+      const result = await mindMapApi.convertToGoal(YEAR, convertModal.nodeId, convertGoalType, convertLifeArea);
+      if (convertGoalType === "Repetitive") {
+        await habitApi.createHabit({
+          goalId: result.id,
+          year: YEAR,
+          title: result.title,
+          frequency: habitFrequency,
+          minimumViableDose: habitMvd.trim(),
+          trackingMethod: "Streak",
+        });
+      }
       setApiNodes((prev) =>
         prev.map((n) => (n.id === convertModal.nodeId ? { ...n, nodeType: "Goal" } : n))
       );
       setConvertModal(null);
-      navigate("/goals");
+      navigate(`/goals/${result.id}`);
     } catch {
+      setConvertError("Failed to create goal. Please try again.");
       setConverting(false);
     }
   }
@@ -660,7 +680,7 @@ export default function MindMapCanvas() {
                 <ListItemText primary="✏️ Edit node" />
               </ListItemButton>
               {(n?.nodeType === "Leaf" || n?.nodeType === "Branch") && (
-                <ListItemButton onClick={() => { setConvertModal({ nodeId: contextMenu.nodeId }); setConvertGoalType(null); setConvertLifeArea("CareerWork"); setContextMenu(null); }}>
+                <ListItemButton onClick={() => { setConvertModal({ nodeId: contextMenu.nodeId }); setConvertGoalType(null); setConvertLifeArea("CareerWork"); setHabitFrequency("Daily"); setHabitMvd(""); setConvertError(null); setContextMenu(null); }}>
                   <ListItemText primary="🎯 Convert to goal" />
                 </ListItemButton>
               )}
@@ -813,14 +833,38 @@ export default function MindMapCanvas() {
               </Paper>
             </Stack>
           ) : (
-            <FormControl fullWidth sx={{ mt: 1 }}>
-              <InputLabel>Life area</InputLabel>
-              <Select label="Life area" value={convertLifeArea} onChange={(e) => setConvertLifeArea(e.target.value)}>
-                {LIFE_AREA_NAMES.map((name, i) => (
-                  <MenuItem key={LIFE_AREA_KEYS[i]} value={LIFE_AREA_KEYS[i]}>{name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Stack spacing={2} mt={1}>
+              <FormControl fullWidth>
+                <InputLabel>Life area</InputLabel>
+                <Select label="Life area" value={convertLifeArea} onChange={(e) => setConvertLifeArea(e.target.value)}>
+                  {LIFE_AREA_NAMES.map((name, i) => (
+                    <MenuItem key={LIFE_AREA_KEYS[i]} value={LIFE_AREA_KEYS[i]}>{name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {convertGoalType === "Repetitive" && (
+                <>
+                  <FormControl fullWidth>
+                    <InputLabel>Frequency</InputLabel>
+                    <Select label="Frequency" value={habitFrequency} onChange={(e) => setHabitFrequency(e.target.value)}>
+                      <MenuItem value="Daily">Daily</MenuItem>
+                      <MenuItem value="Weekly">Weekly</MenuItem>
+                      <MenuItem value="Monthly">Monthly</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    fullWidth size="small"
+                    label="Minimal viable dose"
+                    placeholder="e.g. 10 push-ups, 20 min read"
+                    value={habitMvd}
+                    onChange={(e) => setHabitMvd(e.target.value)}
+                    helperText="The smallest version of this habit that counts"
+                    required
+                  />
+                </>
+              )}
+              {convertError && <Alert severity="error">{convertError}</Alert>}
+            </Stack>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
