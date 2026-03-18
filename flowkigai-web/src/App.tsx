@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TabNav from "@/components/layout/TabNav";
 import AdminGuard from "@/components/layout/AdminGuard";
 import InstallPromptBanner from "@/components/layout/InstallPromptBanner";
+import PushPermissionPrompt from "@/components/layout/PushPermissionPrompt";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
@@ -17,6 +18,7 @@ import TasksPage from "@/pages/TasksPage";
 import ReviewsPage from "@/pages/ReviewsPage";
 import DashboardPage from "@/pages/DashboardPage";
 import AdminPage from "@/pages/AdminPage";
+import NotificationSettingsPage from "@/pages/NotificationSettingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +38,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <InstallPromptBanner />
+        <PushPermissionPrompt />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
@@ -55,6 +58,7 @@ export default function App() {
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
+            <Route path="/settings" element={<NotificationSettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

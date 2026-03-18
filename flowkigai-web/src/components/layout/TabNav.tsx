@@ -8,6 +8,7 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/context/ThemeContext";
 import DeleteAccountDialog from "./DeleteAccountDialog";
@@ -121,6 +122,11 @@ export default function TabNav() {
         {/* Bottom actions */}
         <Divider />
         <Box sx={{ px: 1.5, py: 1.5, display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Tooltip title="Notification settings">
+            <IconButton size="small" component={NavLink} to="/settings">
+              <NotificationsIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={theme === "light" ? "Dark mode" : "Light mode"}>
             <IconButton size="small" onClick={toggleTheme}>
               {theme === "light" ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}

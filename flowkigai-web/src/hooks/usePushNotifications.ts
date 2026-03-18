@@ -1,0 +1,73 @@
+import { useEffect, useState, useCallback } from "react";
+import notificationApi from "@/api/notificationApi";
+
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) {
+    output[i] = rawData.charCodeAt(i);
+  }
+  return output.buffer as ArrayBuffer;
+}
+
+export function usePushNotifications() {
+  const isPushSupported =
+    typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window;
+
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [vapidPublicKey, setVapidPublicKey] = useState<string | null>(null);
+
+  // Load VAPID public key once
+  useEffect(() => {
+    if (!isPushSupported) return;
+    notificationApi.getVapidPublicKey().then(setVapidPublicKey).catch(() => {});
+  }, [isPushSupported]);
+
+  // Detect if already subscribed
+  useEffect(() => {
+    if (!isPushSupported) return;
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setIsPushEnabled(!!sub);
+    });
+  }, [isPushSupported]);
+
+  const subscribeToPush = useCallback(async () => {
+    if (!isPushSupported || !vapidPublicKey) return;
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    const json = subscription.toJSON();
+    await notificationApi.subscribe({
+      endpoint: json.endpoint!,
+      p256dh: json.keys?.p256dh ?? "",
+      auth: json.keys?.auth ?? "",
+      userAgent: navigator.userAgent,
+    });
+
+    setIsPushEnabled(true);
+  }, [isPushSupported, vapidPublicKey]);
+
+  const unsubscribeFromPush = useCallback(async () => {
+    if (!isPushSupported) return;
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.getSubscription();
+    if (!subscription) return;
+
+    await notificationApi.unsubscribe(subscription.endpoint);
+    await subscription.unsubscribe();
+    setIsPushEnabled(false);
+  }, [isPushSupported]);
+
+  return { isPushSupported, isPushEnabled, subscribeToPush, unsubscribeFromPush };
+}
