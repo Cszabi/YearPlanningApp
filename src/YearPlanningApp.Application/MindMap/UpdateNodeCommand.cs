@@ -2,6 +2,7 @@ using Mediator;
 using OneOf;
 using YearPlanningApp.Application.Common.Interfaces;
 using YearPlanningApp.Application.Common.Models;
+using YearPlanningApp.Domain.Enums;
 using YearPlanningApp.Domain.Interfaces;
 
 namespace YearPlanningApp.Application.MindMap;
@@ -12,7 +13,9 @@ public record UpdateNodeCommand(
     string? Label,
     string? Notes,
     double? PositionX,
-    double? PositionY)
+    double? PositionY,
+    string? IkigaiCategory,
+    string? Icon)
     : ICommand<OneOf<MindMapNodeDto, NotFoundError>>, IAuthenticatedCommand;
 
 public class UpdateNodeCommandHandler
@@ -42,6 +45,12 @@ public class UpdateNodeCommandHandler
         if (command.Notes is not null) node.Notes = command.Notes;
         if (command.PositionX.HasValue) node.PositionX = command.PositionX.Value;
         if (command.PositionY.HasValue) node.PositionY = command.PositionY.Value;
+        if (command.IkigaiCategory is not null)
+            node.IkigaiCategory = command.IkigaiCategory == ""
+                ? null
+                : Enum.TryParse<IkigaiCategory>(command.IkigaiCategory, true, out var cat) ? cat : node.IkigaiCategory;
+        if (command.Icon is not null)
+            node.Icon = command.Icon == "" ? null : command.Icon;
 
         await _uow.MindMaps.UpdateNodeAsync(node, ct);
         await _uow.SaveChangesAsync(ct);

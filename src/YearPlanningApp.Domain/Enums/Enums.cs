@@ -4,6 +4,7 @@ public enum IkigaiRoomType { Love = 1, GoodAt = 2, WorldNeeds = 3, PaidFor = 4, 
 public enum IkigaiJourneyStatus { Draft = 1, Complete = 2 }
 
 public enum MindMapNodeType { Root = 1, Branch = 2, Leaf = 3, Goal = 4 }
+public enum IkigaiCategory { Love = 1, GoodAt = 2, WorldNeeds = 3, PaidFor = 4, Intersection = 5 }
 
 public enum GoalType { Project = 1, Repetitive = 2 }
 public enum GoalStatus { Active = 1, Paused = 2, Achieved = 3, Dropped = 4 }

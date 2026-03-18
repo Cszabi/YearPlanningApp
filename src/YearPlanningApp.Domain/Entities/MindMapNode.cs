@@ -15,5 +15,7 @@ public class MindMapNode : BaseEntity
     public double PositionX { get; set; }
     public double PositionY { get; set; }
     public Guid? LinkedGoalId { get; set; }
+    public IkigaiCategory? IkigaiCategory { get; set; }
+    public string? Icon { get; set; }
     public ICollection<MindMapNode> Children { get; set; } = new List<MindMapNode>();
 }

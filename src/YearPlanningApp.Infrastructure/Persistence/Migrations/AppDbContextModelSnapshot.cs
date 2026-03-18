@@ -503,6 +503,15 @@ namespace YearPlanningApp.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<string>("Icon")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("icon");
+
+                    b.Property<int?>("IkigaiCategory")
+                        .HasColumnType("integer")
+                        .HasColumnName("ikigai_category");
+
                     b.Property<string>("Label")
                         .IsRequired()
                         .HasColumnType("text")

@@ -15,7 +15,9 @@ public record MindMapNodeDto(
     string? Notes,
     double PositionX,
     double PositionY,
-    Guid? LinkedGoalId);
+    Guid? LinkedGoalId,
+    string? IkigaiCategory,
+    string? Icon);
 
 public static class MindMapMappings
 {
@@ -32,5 +34,7 @@ public static class MindMapMappings
         n.Notes,
         n.PositionX,
         n.PositionY,
-        n.LinkedGoalId);
+        n.LinkedGoalId,
+        n.IkigaiCategory?.ToString(),
+        n.Icon);
 }

@@ -67,7 +67,7 @@ public class MindMapController : ControllerBase
     [HttpPut("{year:int}/nodes/{nodeId:guid}")]
     public async Task<IActionResult> UpdateNode(int year, Guid nodeId, [FromBody] UpdateNodeRequest body, CancellationToken ct)
     {
-        var command = new UpdateNodeCommand(year, nodeId, body.Label, body.Notes, body.PositionX, body.PositionY);
+        var command = new UpdateNodeCommand(year, nodeId, body.Label, body.Notes, body.PositionX, body.PositionY, body.IkigaiCategory, body.Icon);
         var result = await _mediator.Send(command, ct);
         return result.Match(
             node => Ok(Envelope.Success(node)),
@@ -121,7 +121,7 @@ public class MindMapController : ControllerBase
 }
 
 public record AddNodeRequest(Guid? ParentNodeId, string NodeType, string Label, double PositionX, double PositionY);
-public record UpdateNodeRequest(string? Label, string? Notes, double? PositionX, double? PositionY);
+public record UpdateNodeRequest(string? Label, string? Notes, double? PositionX, double? PositionY, string? IkigaiCategory, string? Icon);
 public record SavePositionsRequest(List<PositionItem> Positions);
 public record PositionItem(Guid NodeId, double X, double Y);
 public record ConvertToGoalRequest(string GoalType, string LifeArea);
