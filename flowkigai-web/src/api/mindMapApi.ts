@@ -12,6 +12,13 @@ export interface MindMapNodeDto {
   ikigaiCategory: string | null; // Love | GoodAt | WorldNeeds | PaidFor | Intersection
   icon: string | null;
   lifeArea: string | null;
+  // Goal status fields (populated for GoalNodes only)
+  goalStatus: string | null;        // Active | Paused | Achieved | Dropped
+  goalTargetDate: string | null;    // ISO 8601 string
+  taskCount: number;
+  completedTaskCount: number;
+  hasSmartGoal: boolean;
+  hasMilestones: boolean;
 }
 
 export interface MindMapDto {
@@ -57,6 +64,11 @@ export const mindMapApi = {
     positions: { nodeId: string; x: number; y: number }[]
   ): Promise<void> => {
     await api.patch(`/mind-maps/${year}/nodes/positions`, { positions });
+  },
+
+  getNodesByDeadline: async (year: number, withinDays: number): Promise<MindMapNodeDto[]> => {
+    const { data } = await api.get(`/mind-maps/${year}/nodes/by-deadline?withinDays=${withinDays}`);
+    return data.data as MindMapNodeDto[];
   },
 
   convertToGoal: async (

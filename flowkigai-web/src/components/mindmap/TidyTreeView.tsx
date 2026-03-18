@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import * as d3 from "d3";
 import type { HierarchyPointNode } from "d3";
 import type { MindMapNodeDto } from "@/api/mindMapApi";
-import { LIFE_AREA_COLORS } from "./nodes";
+import { LIFE_AREA_COLORS, getFocusColor } from "./nodes";
 
 // Horizontal left-to-right tidy tree layout (Reingold–Tilford via d3.tree)
 // ViewBox 1000×1000, root on the left, leaves on the right.
@@ -83,6 +83,7 @@ export interface TidyTreeViewProps {
   onContextMenu: (nodeId: string, x: number, y: number) => void;
   onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
+  focusMode?: boolean;
 }
 
 export default function TidyTreeView({
@@ -93,6 +94,7 @@ export default function TidyTreeView({
   onContextMenu,
   onRename,
   onHover,
+  focusMode = false,
 }: TidyTreeViewProps) {
   const root = useMemo(() => buildTidyTree(nodes), [nodes]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -131,10 +133,10 @@ export default function TidyTreeView({
 
       {/* Nodes */}
       {descendants.map((d) => {
-        const color = getBranchColor(d);
         const isRoot = d.depth === 0;
-        const isHovered = hoveredId === d.data.id;
         const isGoal = d.data.nodeType === "Goal";
+        const color = (focusMode && isGoal) ? getFocusColor(d.data) : getBranchColor(d);
+        const isHovered = hoveredId === d.data.id;
         const nodeIcon = d.data.icon ? d.data.icon + " " : "";
         const labelText = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
         const canClick = !!(d.children || d.depth >= MAX_DEPTH);

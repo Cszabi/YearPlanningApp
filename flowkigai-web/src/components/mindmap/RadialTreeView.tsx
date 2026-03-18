@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import * as d3 from "d3";
 import type { HierarchyPointNode } from "d3";
 import type { MindMapNodeDto } from "@/api/mindMapApi";
-import { LIFE_AREA_COLORS } from "./nodes";
+import { LIFE_AREA_COLORS, getFocusColor } from "./nodes";
 
 const VB = 1000;
 const TREE_R = 360;  // tighter rings
@@ -74,8 +74,9 @@ export interface RadialTreeViewProps {
   onZoomIn: (nodeId: string) => void;
   onZoomOut: () => void;
   onContextMenu: (nodeId: string, x: number, y: number) => void;
-  onRename: (nodeId: string, label: string) => void;
+  onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
+  focusMode?: boolean;
 }
 
 export default function RadialTreeView({
@@ -86,6 +87,7 @@ export default function RadialTreeView({
   onContextMenu,
   onRename,
   onHover,
+  focusMode = false,
 }: RadialTreeViewProps) {
   const root = useMemo(() => buildRadialTree(nodes), [nodes]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -128,9 +130,9 @@ export default function RadialTreeView({
         {descendants
           .filter((d) => d.depth > 0)
           .map((d) => {
-            const color = getBranchColor(d);
-            const isHovered = hoveredId === d.data.id;
             const isGoal = d.data.nodeType === "Goal";
+            const color = (focusMode && isGoal) ? getFocusColor(d.data) : getBranchColor(d);
+            const isHovered = hoveredId === d.data.id;
             const nodeIcon = d.data.icon ? d.data.icon + " " : "";
             const label = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
             const canClick = !!(d.children || d.depth >= MAX_DEPTH);
@@ -142,7 +144,7 @@ export default function RadialTreeView({
                 key={d.data.id}
                 transform={`rotate(${angleDeg}) translate(${d.y},0)`}
                 onClick={(e) => { e.stopPropagation(); if (canClick) onZoomIn(d.data.id); }}
-                onDoubleClick={(e) => { e.stopPropagation(); onRename(d.data.id, d.data.label); }}
+                onDoubleClick={(e) => { e.stopPropagation(); onRename(d.data.id, d.data.label, e.clientX, e.clientY); }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

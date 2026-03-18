@@ -16,7 +16,7 @@ import {
   List, ListItemButton, ListItemText,
   ToggleButtonGroup, ToggleButton, Alert,
 } from "@mui/material";
-import { IKIGAI_CATEGORY_CONFIG } from "./nodes";
+import { IKIGAI_CATEGORY_CONFIG, getFocusColor, FOCUS_LEGEND } from "./nodes";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
@@ -174,9 +174,10 @@ interface SunburstSvgProps {
   onContextMenu: (nodeId: string, x: number, y: number) => void;
   onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
+  focusMode?: boolean;
 }
 
-function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRename, onHover }: SunburstSvgProps) {
+function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRename, onHover, focusMode = false }: SunburstSvgProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const { arcs, centerR, centerLabel } = useMemo(() => {
@@ -229,6 +230,7 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
       {arcs.map(({ d, path, color, showLabel, labelTransform, arcLen, ringW }) => {
         const isHovered = hoveredId === d.data.id;
         const isGoal = d.data.nodeType === "Goal";
+        const arcColor = (focusMode && isGoal) ? getFocusColor(d.data) : color;
         const nodeIcon = d.data.icon ? d.data.icon + " " : "";
         const rawLabel = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
         const { lines, fs: lineFs } = wrapLabel(rawLabel, arcLen, ringW, fs);
@@ -237,7 +239,7 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
           <g key={d.data.id}>
             <path
               d={path}
-              fill={isHovered ? blendWithWhite(color.startsWith("rgb") ? "#888" : color, 0.7) : color}
+              fill={isHovered ? blendWithWhite(arcColor.startsWith("rgb") ? "#888" : arcColor, 0.7) : arcColor}
               stroke="white"
               strokeWidth={1.5}
               opacity={isHovered ? 0.82 : 1}
@@ -345,6 +347,8 @@ export default function MindMapCanvas() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>("sunburst");
+  const [focusMode, setFocusMode] = useState(false);
+  const [deadlineFilter, setDeadlineFilter] = useState<number | null>(null);
 
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const [creating, setCreating] = useState<{ parentId: string } | null>(null);
@@ -400,7 +404,28 @@ export default function MindMapCanvas() {
     [apiNodes, focusedId]
   );
 
-  const root = useMemo(() => buildPartition(displayNodes), [displayNodes]);
+  const filteredDisplayNodes = useMemo(() => {
+    if (!deadlineFilter) return displayNodes;
+    const cutoff = Date.now() + deadlineFilter * 86400000;
+    const matchingIds = new Set(
+      displayNodes
+        .filter((n) => n.nodeType === "Goal" && n.goalTargetDate && new Date(n.goalTargetDate).getTime() <= cutoff)
+        .map((n) => n.id)
+    );
+    if (matchingIds.size === 0) return displayNodes;
+    const nodeMap = new Map(displayNodes.map((n) => [n.id, n]));
+    const neededIds = new Set<string>();
+    const addAncestors = (id: string) => {
+      if (neededIds.has(id)) return;
+      neededIds.add(id);
+      const node = nodeMap.get(id);
+      if (node?.parentNodeId) addAncestors(node.parentNodeId);
+    };
+    matchingIds.forEach((id) => addAncestors(id));
+    return displayNodes.filter((n) => neededIds.has(n.id));
+  }, [displayNodes, deadlineFilter]);
+
+  const root = useMemo(() => buildPartition(filteredDisplayNodes), [filteredDisplayNodes]);
 
   const focusedParentId = useMemo(
     () => (focusedId ? (apiNodes.find((n) => n.id === focusedId)?.parentNodeId ?? null) : null),
@@ -564,6 +589,30 @@ export default function MindMapCanvas() {
 
       {/* Toolbar */}
       <Stack direction="row" spacing={1} sx={{ position: "absolute", top: 12, right: 16, zIndex: 10 }}>
+        {/* Deadline filter */}
+        <Select
+          size="small"
+          value={deadlineFilter?.toString() ?? ""}
+          onChange={(e) => setDeadlineFilter(e.target.value === "" ? null : Number(e.target.value))}
+          displayEmpty
+          sx={{ bgcolor: "background.paper", borderRadius: 2, fontSize: "0.78rem", minWidth: 130, height: 36 }}
+        >
+          <MenuItem value="">All deadlines</MenuItem>
+          <MenuItem value="7">Due in 7 days</MenuItem>
+          <MenuItem value="14">Due in 14 days</MenuItem>
+          <MenuItem value="30">Due in 30 days</MenuItem>
+        </Select>
+
+        {/* Focus mode toggle */}
+        <Button
+          size="small"
+          variant={focusMode ? "contained" : "outlined"}
+          onClick={() => setFocusMode((v) => !v)}
+          sx={{ borderRadius: 3, bgcolor: focusMode ? "primary.main" : "background.paper", minWidth: 100 }}
+        >
+          🎯 Focus
+        </Button>
+
         {focusedId && (
           <Button size="small" variant="outlined" startIcon={<ArrowBackIcon />}
             onClick={() => setFocusedId(focusedParentId)} sx={{ borderRadius: 3, bgcolor: "background.paper" }}>
@@ -586,6 +635,21 @@ export default function MindMapCanvas() {
             ? "Click a section to zoom in · Right-click for options"
             : "Click a node to zoom in · Right-click for options"}
         </Typography>
+      )}
+
+      {/* Focus mode legend */}
+      {focusMode && (
+        <Paper elevation={2} sx={{ position: "absolute", bottom: 40, left: 12, zIndex: 10, px: 2, py: 1.5, borderRadius: 2 }}>
+          <Typography variant="caption" fontWeight={600} sx={{ display: "block", mb: 0.5 }}>Goal status</Typography>
+          <Stack spacing={0.5}>
+            {FOCUS_LEGEND.map(({ color, label }) => (
+              <Stack key={label} direction="row" alignItems="center" spacing={1}>
+                <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
+                <Typography variant="caption" color="text.secondary">{label}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Paper>
       )}
 
       {/* ── Views ─────────────────────────────────────────────────────────────── */}
@@ -620,21 +684,23 @@ export default function MindMapCanvas() {
               onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
               onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
               onHover={handleHover}
+              focusMode={focusMode}
             />
           </g>
         </svg>
       )}
 
       {viewMode === "radial-tree" && (
-        displayNodes.some((n) => n.parentNodeId === null) ? (
+        filteredDisplayNodes.some((n) => n.parentNodeId === null) ? (
           <RadialTreeView
-            nodes={displayNodes}
+            nodes={filteredDisplayNodes}
             canGoUp={focusedId !== null}
             onZoomIn={setFocusedId}
             onZoomOut={() => setFocusedId(focusedParentId)}
             onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
             onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
             onHover={handleHover}
+            focusMode={focusMode}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3">
@@ -645,15 +711,16 @@ export default function MindMapCanvas() {
       )}
 
       {viewMode === "tidy-tree" && (
-        displayNodes.some((n) => n.parentNodeId === null) ? (
+        filteredDisplayNodes.some((n) => n.parentNodeId === null) ? (
           <TidyTreeView
-            nodes={displayNodes}
+            nodes={filteredDisplayNodes}
             canGoUp={focusedId !== null}
             onZoomIn={setFocusedId}
             onZoomOut={() => setFocusedId(focusedParentId)}
             onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
             onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
             onHover={handleHover}
+            focusMode={focusMode}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3">

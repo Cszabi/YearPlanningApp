@@ -1,5 +1,6 @@
 import { memo, useState, useEffect } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
+import type { MindMapNodeDto } from "@/api/mindMapApi";
 
 export const LIFE_AREA_COLORS = [
   "#0EA5E9", // CareerWork     – sky blue
@@ -21,6 +22,31 @@ export const LIFE_AREA_NAMES = [
   "Creativity & Hobbies",
   "Environment",
   "Contribution",
+];
+
+// ── Focus mode colour coding ───────────────────────────────────────────────────
+export function getFocusColor(node: MindMapNodeDto): string {
+  if (!node.goalStatus) return "#9CA3AF";
+  switch (node.goalStatus) {
+    case "Achieved": return "#10B981"; // emerald
+    case "Dropped":  return "#9CA3AF"; // grey
+    case "Paused":   return "#F5A623"; // amber
+    default: { // Active
+      if (node.goalTargetDate) {
+        const daysLeft = Math.ceil((new Date(node.goalTargetDate).getTime() - Date.now()) / 86400000);
+        if (daysLeft <= 30) return "#E8705A"; // coral = at risk
+      }
+      return "#0D6E6E"; // teal = on track
+    }
+  }
+}
+
+export const FOCUS_LEGEND = [
+  { color: "#0D6E6E", label: "Active – on track" },
+  { color: "#E8705A", label: "Active – due ≤30 days" },
+  { color: "#F5A623", label: "Paused" },
+  { color: "#10B981", label: "Achieved" },
+  { color: "#9CA3AF", label: "Dropped / no data" },
 ];
 
 // ── Ikigai category config ─────────────────────────────────────────────────────
