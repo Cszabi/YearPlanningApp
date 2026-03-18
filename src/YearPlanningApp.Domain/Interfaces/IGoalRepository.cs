@@ -14,4 +14,5 @@ public interface IGoalRepository : IRepository<Goal>
     Task<Milestone?> GetMilestoneWithGoalAsync(Guid milestoneId, CancellationToken ct = default);
     void UpdateMilestone(Milestone milestone);
     void RemoveMilestone(Milestone milestone);
+    Task<IEnumerable<Goal>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
 }

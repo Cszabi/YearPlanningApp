@@ -2,6 +2,7 @@ using Mediator;
 using OneOf;
 using YearPlanningApp.Application.Common.Interfaces;
 using YearPlanningApp.Application.Common.Models;
+using YearPlanningApp.Domain.Entities;
 using YearPlanningApp.Domain.Interfaces;
 
 namespace YearPlanningApp.Application.MindMap;
@@ -28,6 +29,19 @@ public class GetMindMapQueryHandler
         if (mindMap is null)
             return new NotFoundError("MindMap", Guid.Empty);
 
-        return mindMap.ToDto();
+        var goalIds = mindMap.Nodes
+            .Where(n => n.LinkedGoalId.HasValue)
+            .Select(n => n.LinkedGoalId!.Value)
+            .Distinct()
+            .ToList();
+
+        Dictionary<Guid, Goal> goalMap = [];
+        if (goalIds.Count > 0)
+        {
+            var goals = await _uow.Goals.GetByIdsAsync(goalIds, ct);
+            goalMap = goals.ToDictionary(g => g.Id);
+        }
+
+        return mindMap.ToDto(goalMap);
     }
 }

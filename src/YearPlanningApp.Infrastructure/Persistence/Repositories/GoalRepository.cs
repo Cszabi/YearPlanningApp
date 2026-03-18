@@ -69,6 +69,13 @@ public class GoalRepository : BaseRepository<Goal>, IGoalRepository
         _context.Milestones.Update(milestone);
     }
 
+    public async Task<IEnumerable<Goal>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default)
+        => await _context.Goals
+            .Include(g => g.SmartGoal)
+            .Include(g => g.Milestones).ThenInclude(m => m.Tasks)
+            .Where(g => ids.Contains(g.Id))
+            .ToListAsync(ct);
+
     public async Task<double> CalculateGoalProgressAsync(Guid goalId, CancellationToken ct = default)
     {
         var total = await _context.TaskItems.CountAsync(t => t.GoalId == goalId, ct);

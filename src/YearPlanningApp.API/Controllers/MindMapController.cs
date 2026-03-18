@@ -101,6 +101,17 @@ public class MindMapController : ControllerBase
         );
     }
 
+    // GET /api/v1/mind-maps/{year}/nodes/by-deadline?withinDays={n}
+    [HttpGet("{year:int}/nodes/by-deadline")]
+    public async Task<IActionResult> GetNodesByDeadline(int year, [FromQuery] int withinDays = 30, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GetNodesByDeadlineQuery(year, withinDays), ct);
+        return result.Match(
+            nodes => Ok(Envelope.Success(nodes)),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
+        );
+    }
+
     // POST /api/v1/mind-maps/{year}/nodes/{nodeId}/convert-to-goal
     [HttpPost("{year:int}/nodes/{nodeId:guid}/convert-to-goal")]
     public async Task<IActionResult> ConvertToGoal(int year, Guid nodeId, [FromBody] ConvertToGoalRequest body, CancellationToken ct)
