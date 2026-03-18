@@ -9,6 +9,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import IkigaiPage from "@/pages/IkigaiPage";
 import MindMapPage from "@/pages/MindMapPage";
 import GoalsPage from "@/pages/GoalsPage";
+import GoalDetailPage from "@/pages/GoalDetailPage";
 import CalendarPage from "@/pages/CalendarPage";
 import FlowPage from "@/pages/FlowPage";
 import TasksPage from "@/pages/TasksPage";
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/ikigai" element={<IkigaiPage />} />
             <Route path="/map" element={<MindMapPage />} />
             <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/goals/:goalId" element={<GoalDetailPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/flow" element={<FlowPage />} />
             <Route path="/tasks" element={<TasksPage />} />

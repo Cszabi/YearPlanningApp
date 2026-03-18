@@ -16,6 +16,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { goalApi, type GoalDto, type MilestoneDto } from "@/api/goalApi";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -246,6 +247,7 @@ interface Props {
 
 export default function GoalCard({ goal }: Props) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [taskStatus, setTaskStatus] = useState<Record<string, string>>({});
   const [nextActionState, setNextActionState] = useState<Record<string, boolean>>({});
@@ -417,7 +419,11 @@ export default function GoalCard({ goal }: Props) {
 
           {/* Title row */}
           <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1} mb={1}>
-            <Typography variant="body1" fontWeight={600} sx={{ lineHeight: 1.4, flex: 1 }}>
+            <Typography
+              variant="body1" fontWeight={600}
+              sx={{ lineHeight: 1.4, flex: 1, cursor: "pointer", "&:hover": { color: "primary.main" } }}
+              onClick={() => navigate(`/goals/${goal.id}`)}
+            >
               {goal.title}
             </Typography>
             <Stack direction="row" alignItems="center" gap={0.5}>

@@ -83,6 +83,15 @@ export const goalApi = {
     return data.data as GoalDto;
   },
 
+  updateGoal: async (
+    id: string,
+    year: number,
+    body: { title?: string; whyItMatters?: string; targetDate?: string | null; lifeArea?: string; energyLevel?: string; alignedValueNames?: string[] }
+  ): Promise<GoalDto> => {
+    const { data } = await api.put(`/goals/${id}`, { year, ...body });
+    return data.data as GoalDto;
+  },
+
   saveSmart: async (id: string, year: number, body: {
     specific: string;
     measurable: string;
