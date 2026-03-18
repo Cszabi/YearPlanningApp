@@ -8,10 +8,10 @@ import { LIFE_AREA_COLORS } from "./nodes";
 // ViewBox 1000×1000, root on the left, leaves on the right.
 const VB = 1000;
 const MAX_DEPTH = 3;
-const NODE_R = 7;
-const ML = 70;   // left margin (root area)
-const MT = 40;   // top/bottom margin
-const MR = 200;  // right margin (space for leaf labels)
+const NODE_R = 8;
+const ML = 80;   // left margin (root area)
+const MT = 50;   // top/bottom margin
+const TREE_W = 560; // horizontal depth (levels closer together)
 
 function blendWithWhite(hex: string, t: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -46,7 +46,7 @@ function buildTidyTree(nodes: MindMapNodeDto[]): PNode | null {
       .id((d) => d.id)
       .parentId((d) => d.parentNodeId)(limited);
     // size([height = vertical spread, width = horizontal depth])
-    return d3.tree<MindMapNodeDto>().size([VB - MT * 2, VB - ML - MR])(root);
+    return d3.tree<MindMapNodeDto>().size([VB - MT * 2, TREE_W])(root);
   } catch {
     return null;
   }
@@ -135,7 +135,8 @@ export default function TidyTreeView({
         const isRoot = d.depth === 0;
         const isHovered = hoveredId === d.data.id;
         const isGoal = d.data.nodeType === "Goal";
-        const labelText = isGoal ? "🎯 " + d.data.label : d.data.label;
+        const nodeIcon = d.data.icon ? d.data.icon + " " : "";
+        const labelText = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
         const canClick = !!(d.children || d.depth >= MAX_DEPTH);
         const nodeX = sx(d);
         const nodeY = sy(d);
@@ -206,15 +207,15 @@ export default function TidyTreeView({
             {/* Non-root label */}
             {!isRoot && (
               <text
-                x={nodeX + NODE_R + 5}
+                x={nodeX + NODE_R + 6}
                 y={nodeY}
                 dominantBaseline="middle"
-                fontSize={13}
+                fontSize={15}
                 fontWeight={d.depth === 1 ? 600 : 400}
                 fill="#374151"
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
-                {truncate(labelText, 26)}
+                {truncate(labelText, 22)}
               </text>
             )}
           </g>

@@ -5,9 +5,9 @@ import type { MindMapNodeDto } from "@/api/mindMapApi";
 import { LIFE_AREA_COLORS } from "./nodes";
 
 const VB = 1000;
-const TREE_R = 440;
+const TREE_R = 360;  // tighter rings
 const MAX_DEPTH = 3;
-const NODE_R = 8;
+const NODE_R = 9;
 
 function blendWithWhite(hex: string, t: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -131,7 +131,8 @@ export default function RadialTreeView({
             const color = getBranchColor(d);
             const isHovered = hoveredId === d.data.id;
             const isGoal = d.data.nodeType === "Goal";
-            const label = isGoal ? "🎯 " + d.data.label : d.data.label;
+            const nodeIcon = d.data.icon ? d.data.icon + " " : "";
+            const label = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
             const canClick = !!(d.children || d.depth >= MAX_DEPTH);
             const angleDeg = (d.x * 180) / Math.PI - 90;
             const flipLabel = d.x >= Math.PI;
@@ -163,7 +164,7 @@ export default function RadialTreeView({
                   x={flipLabel ? -(NODE_R + 6) : NODE_R + 6}
                   textAnchor={flipLabel ? "end" : "start"}
                   transform={flipLabel ? "rotate(180)" : undefined}
-                  fontSize={13}
+                  fontSize={15}
                   fontWeight={d.depth === 1 ? 600 : 400}
                   fill="#374151"
                   style={{ pointerEvents: "none", userSelect: "none" }}

@@ -16,6 +16,7 @@ import {
   List, ListItemButton, ListItemText,
   ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
+import { IKIGAI_CATEGORY_CONFIG } from "./nodes";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
@@ -227,7 +228,8 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
       {arcs.map(({ d, path, color, showLabel, labelTransform, arcLen, ringW }) => {
         const isHovered = hoveredId === d.data.id;
         const isGoal = d.data.nodeType === "Goal";
-        const rawLabel = isGoal ? "🎯 " + d.data.label : d.data.label;
+        const nodeIcon = d.data.icon ? d.data.icon + " " : "";
+        const rawLabel = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
         const { lines, fs: lineFs } = wrapLabel(rawLabel, arcLen, ringW, fs);
         const lineH = lineFs * 1.25;
         return (
@@ -349,6 +351,7 @@ export default function MindMapCanvas() {
   const [renameModal, setRenameModal] = useState<{ nodeId: string; label: string } | null>(null);
   const [renameLabel, setRenameLabel] = useState("");
   const [notesPanel, setNotesPanel] = useState<{ nodeId: string; notes: string } | null>(null);
+  const [editNodePanel, setEditNodePanel] = useState<{ nodeId: string; ikigaiCategory: string; icon: string } | null>(null);
   const [convertModal, setConvertModal] = useState<{ nodeId: string } | null>(null);
   const [convertGoalType, setConvertGoalType] = useState<string | null>(null);
   const [convertLifeArea, setConvertLifeArea] = useState("CareerWork");
@@ -431,6 +434,21 @@ export default function MindMapCanvas() {
       prev.map((n) => (n.id === notesPanel.nodeId ? { ...n, notes: notesPanel.notes } : n))
     );
     setNotesPanel(null);
+  }
+
+  // ── Edit node (IkigaiCategory + Icon) ─────────────────────────────────────────
+  async function handleEditNodeSave() {
+    if (!editNodePanel) return;
+    const { nodeId, ikigaiCategory, icon } = editNodePanel;
+    await mindMapApi.updateNode(YEAR, nodeId, { ikigaiCategory: ikigaiCategory || "", icon: icon || "" }).catch(() => {});
+    setApiNodes((prev) =>
+      prev.map((n) =>
+        n.id === nodeId
+          ? { ...n, ikigaiCategory: ikigaiCategory || null, icon: icon || null }
+          : n
+      )
+    );
+    setEditNodePanel(null);
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────────
@@ -642,6 +660,9 @@ export default function MindMapCanvas() {
               <ListItemButton onClick={() => { if (n) setNotesPanel({ nodeId: n.id, notes: n.notes ?? "" }); setContextMenu(null); }}>
                 <ListItemText primary="Edit notes" />
               </ListItemButton>
+              <ListItemButton onClick={() => { if (n) setEditNodePanel({ nodeId: n.id, ikigaiCategory: n.ikigaiCategory ?? "", icon: n.icon ?? "" }); setContextMenu(null); }}>
+                <ListItemText primary="✨ Edit category & icon" />
+              </ListItemButton>
               {(n?.nodeType === "Leaf" || n?.nodeType === "Branch") && (
                 <ListItemButton onClick={() => { setConvertModal({ nodeId: contextMenu.nodeId }); setConvertGoalType(null); setConvertLifeArea("CareerWork"); setContextMenu(null); }}>
                   <ListItemText primary="🎯 Convert to goal" />
@@ -713,6 +734,46 @@ export default function MindMapCanvas() {
           />
           <Box sx={{ px: 2.5, py: 2, borderTop: 1, borderColor: "divider" }}>
             <Button variant="contained" fullWidth onClick={handleNotesSave} sx={{ borderRadius: 3 }}>Save notes</Button>
+          </Box>
+        </Paper>
+      )}
+
+      {/* ── Edit node panel (IkigaiCategory + Icon) ─────────────────────────── */}
+      {editNodePanel && (
+        <Paper
+          elevation={4}
+          sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 320, zIndex: 900, display: "flex", flexDirection: "column", borderRadius: 0 }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2.5, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+            <Typography variant="subtitle2" fontWeight={600}>Edit category & icon</Typography>
+            <IconButton size="small" onClick={() => setEditNodePanel(null)}>✕</IconButton>
+          </Stack>
+          <Stack spacing={2.5} sx={{ p: 2.5, flex: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Ikigai category</InputLabel>
+              <Select
+                label="Ikigai category"
+                value={editNodePanel.ikigaiCategory}
+                onChange={(e) => setEditNodePanel({ ...editNodePanel, ikigaiCategory: e.target.value })}
+              >
+                <MenuItem value="">None</MenuItem>
+                {Object.entries(IKIGAI_CATEGORY_CONFIG).map(([key, cfg]) => (
+                  <MenuItem key={key} value={key}>{cfg.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              size="small"
+              label="Icon"
+              placeholder="e.g. 🎯 or 📚"
+              value={editNodePanel.icon}
+              onChange={(e) => setEditNodePanel({ ...editNodePanel, icon: e.target.value })}
+              helperText="Paste any emoji"
+              inputProps={{ maxLength: 10 }}
+            />
+          </Stack>
+          <Box sx={{ px: 2.5, py: 2, borderTop: 1, borderColor: "divider" }}>
+            <Button variant="contained" fullWidth onClick={handleEditNodeSave} sx={{ borderRadius: 3 }}>Save</Button>
           </Box>
         </Paper>
       )}

@@ -23,14 +23,52 @@ export const LIFE_AREA_NAMES = [
   "Contribution",
 ];
 
+// ── Ikigai category config ─────────────────────────────────────────────────────
+
+export const IKIGAI_CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
+  Love:        { label: "💛 Love",        color: "#F43F5E" },
+  GoodAt:      { label: "💪 Good At",     color: "#7C3AED" },
+  WorldNeeds:  { label: "🌍 World Needs", color: "#0D6E6E" },
+  PaidFor:     { label: "💰 Paid For",    color: "#F5A623" },
+  Intersection:{ label: "✨ Intersection", color: "#E8705A" },
+};
+
 export interface MindMapNodeData {
   label: string;
   notes: string | null;
   linkedGoalId: string | null;
   editing: boolean;
   colorIndex: number;
+  ikigaiCategory: string | null;
+  icon: string | null;
   onLabelSave: (id: string, label: string) => void;
   onContextMenu: (id: string, x: number, y: number) => void;
+}
+
+// ── Ikigai category badge ──────────────────────────────────────────────────────
+function IkigaiBadge({ category }: { category: string }) {
+  const cfg = IKIGAI_CATEGORY_CONFIG[category];
+  if (!cfg) return null;
+  return (
+    <div
+      style={{
+        display: "inline-block",
+        marginTop: 4,
+        padding: "1px 6px",
+        borderRadius: 10,
+        backgroundColor: cfg.color + "22",
+        color: cfg.color,
+        fontSize: 10,
+        fontWeight: 600,
+        maxWidth: 90,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {cfg.label}
+    </div>
+  );
 }
 
 // ── Shared editable label ──────────────────────────────────────────────────────
@@ -46,7 +84,14 @@ function EditableLabel({
   const [text, setText] = useState(data.label);
   useEffect(() => setText(data.label), [data.label]);
 
-  if (!data.editing) return <span style={style}>{data.label}</span>;
+  if (!data.editing) {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, ...style }}>
+        {data.icon && <span style={{ fontSize: 14, lineHeight: 1 }}>{data.icon}</span>}
+        <span>{data.label}</span>
+      </span>
+    );
+  }
 
   return (
     <input
@@ -126,6 +171,7 @@ export const BranchNode = memo(({ data, id }: NodeProps<MindMapNodeData>) => {
       }}
     >
       <EditableLabel id={id} data={data} />
+      {data.ikigaiCategory && <IkigaiBadge category={data.ikigaiCategory} />}
       <Handle type="source" position={Position.Right} />
       <Handle type="target" position={Position.Left} />
     </div>
@@ -152,6 +198,7 @@ export const LeafNode = memo(({ data, id }: NodeProps<MindMapNodeData>) => (
     }}
   >
     <EditableLabel id={id} data={data} style={{ color: "#6B7280" }} />
+    {data.ikigaiCategory && <IkigaiBadge category={data.ikigaiCategory} />}
     <Handle type="source" position={Position.Right} style={{ width: 8, height: 8 }} />
     <Handle type="target" position={Position.Left} style={{ width: 8, height: 8 }} />
   </div>
@@ -178,6 +225,7 @@ export const GoalNode = memo(({ data, id }: NodeProps<MindMapNodeData>) => (
   >
     <div style={{ fontSize: 10, marginBottom: 2 }}>🎯</div>
     <EditableLabel id={id} data={data} />
+    {data.ikigaiCategory && <IkigaiBadge category={data.ikigaiCategory} />}
     <Handle type="source" position={Position.Right} style={{ width: 8, height: 8 }} />
     <Handle type="target" position={Position.Left} style={{ width: 8, height: 8 }} />
   </div>

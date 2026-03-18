@@ -9,6 +9,8 @@ export interface MindMapNodeDto {
   positionX: number;
   positionY: number;
   linkedGoalId: string | null;
+  ikigaiCategory: string | null; // Love | GoodAt | WorldNeeds | PaidFor | Intersection
+  icon: string | null;
 }
 
 export interface MindMapDto {
@@ -39,7 +41,7 @@ export const mindMapApi = {
   updateNode: async (
     year: number,
     nodeId: string,
-    body: { label?: string; notes?: string; positionX?: number; positionY?: number }
+    body: { label?: string; notes?: string; positionX?: number; positionY?: number; ikigaiCategory?: string; icon?: string }
   ): Promise<MindMapNodeDto> => {
     const { data } = await api.put(`/mind-maps/${year}/nodes/${nodeId}`, body);
     return data.data as MindMapNodeDto;
