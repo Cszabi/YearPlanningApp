@@ -171,7 +171,7 @@ interface SunburstSvgProps {
   onZoomIn: (nodeId: string) => void;
   onZoomOut: () => void;
   onContextMenu: (nodeId: string, x: number, y: number) => void;
-  onRename: (nodeId: string, label: string) => void;
+  onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
 }
 
@@ -249,7 +249,7 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
               }}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                onRename(d.data.id, d.data.label);
+                onRename(d.data.id, d.data.label, e.clientX, e.clientY);
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -348,10 +348,12 @@ export default function MindMapCanvas() {
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const [creating, setCreating] = useState<{ parentId: string } | null>(null);
   const [newNodeLabel, setNewNodeLabel] = useState("");
-  const [renameModal, setRenameModal] = useState<{ nodeId: string; label: string } | null>(null);
-  const [renameLabel, setRenameLabel] = useState("");
-  const [notesPanel, setNotesPanel] = useState<{ nodeId: string; notes: string } | null>(null);
-  const [editNodePanel, setEditNodePanel] = useState<{ nodeId: string; ikigaiCategory: string; icon: string } | null>(null);
+  const [editPanel, setEditPanel] = useState<{
+    nodeId: string; nodeType: string; label: string;
+    notes: string; ikigaiCategory: string; icon: string; lifeArea: string;
+  } | null>(null);
+  const [inlineEdit, setInlineEdit] = useState<{ nodeId: string; label: string; x: number; y: number } | null>(null);
+  const [inlineEditValue, setInlineEditValue] = useState("");
   const [convertModal, setConvertModal] = useState<{ nodeId: string } | null>(null);
   const [convertGoalType, setConvertGoalType] = useState<string | null>(null);
   const [convertLifeArea, setConvertLifeArea] = useState("CareerWork");
@@ -416,44 +418,44 @@ export default function MindMapCanvas() {
     setNewNodeLabel("");
   }
 
-  // ── Rename ────────────────────────────────────────────────────────────────────
-  async function handleRenameSave() {
-    if (!renameModal || !renameLabel.trim()) return;
-    await mindMapApi.updateNode(YEAR, renameModal.nodeId, { label: renameLabel.trim() }).catch(() => {});
-    setApiNodes((prev) =>
-      prev.map((n) => (n.id === renameModal.nodeId ? { ...n, label: renameLabel.trim() } : n))
-    );
-    setRenameModal(null);
+  // ── Open edit panel ───────────────────────────────────────────────────────────
+  function openEditPanel(nodeId: string) {
+    const n = apiNodes.find((x) => x.id === nodeId);
+    if (!n) return;
+    setEditPanel({ nodeId, nodeType: n.nodeType, label: n.label, notes: n.notes ?? "", ikigaiCategory: n.ikigaiCategory ?? "", icon: n.icon ?? "", lifeArea: n.lifeArea ?? "" });
   }
 
-  // ── Notes ─────────────────────────────────────────────────────────────────────
-  async function handleNotesSave() {
-    if (!notesPanel) return;
-    await mindMapApi.updateNode(YEAR, notesPanel.nodeId, { notes: notesPanel.notes }).catch(() => {});
-    setApiNodes((prev) =>
-      prev.map((n) => (n.id === notesPanel.nodeId ? { ...n, notes: notesPanel.notes } : n))
-    );
-    setNotesPanel(null);
-  }
-
-  // ── Edit node (IkigaiCategory + Icon) ─────────────────────────────────────────
-  async function handleEditNodeSave() {
-    if (!editNodePanel) return;
-    const { nodeId, ikigaiCategory, icon } = editNodePanel;
-    await mindMapApi.updateNode(YEAR, nodeId, { ikigaiCategory: ikigaiCategory || "", icon: icon || "" }).catch(() => {});
+  // ── Save edit panel ───────────────────────────────────────────────────────────
+  async function handleEditPanelSave() {
+    if (!editPanel) return;
+    const { nodeId, label, notes, ikigaiCategory, icon, lifeArea } = editPanel;
+    if (!label.trim()) return;
+    await mindMapApi.updateNode(YEAR, nodeId, { label: label.trim(), notes, ikigaiCategory, icon, lifeArea }).catch(() => {});
     setApiNodes((prev) =>
       prev.map((n) =>
         n.id === nodeId
-          ? { ...n, ikigaiCategory: ikigaiCategory || null, icon: icon || null }
+          ? { ...n, label: label.trim(), notes: notes || null, ikigaiCategory: ikigaiCategory || null, icon: icon || null, lifeArea: lifeArea || null }
           : n
       )
     );
-    setEditNodePanel(null);
+    setEditPanel(null);
+  }
+
+  // ── Inline label edit ────────────────────────────────────────────────────────
+  async function handleInlineEditSave() {
+    if (!inlineEdit) return;
+    const { nodeId } = inlineEdit;
+    const label = inlineEditValue.trim();
+    setInlineEdit(null);
+    if (!label) return;
+    await mindMapApi.updateNode(YEAR, nodeId, { label }).catch(() => {});
+    setApiNodes((prev) => prev.map((n) => (n.id === nodeId ? { ...n, label } : n)));
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────────
   function handleDeleteRequest(nodeId: string) {
     setContextMenu(null);
+    setEditPanel(null);
     if (apiNodes.some((n) => n.parentNodeId === nodeId)) {
       setDeleteConfirm(nodeId);
     } else {
@@ -596,7 +598,7 @@ export default function MindMapCanvas() {
               onZoomIn={setFocusedId}
               onZoomOut={() => setFocusedId(focusedParentId)}
               onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
-              onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
+              onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
               onHover={handleHover}
             />
           </g>
@@ -611,7 +613,7 @@ export default function MindMapCanvas() {
             onZoomIn={setFocusedId}
             onZoomOut={() => setFocusedId(focusedParentId)}
             onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
-            onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
+            onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
             onHover={handleHover}
           />
         ) : (
@@ -630,7 +632,7 @@ export default function MindMapCanvas() {
             onZoomIn={setFocusedId}
             onZoomOut={() => setFocusedId(focusedParentId)}
             onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
-            onRename={(id, label) => { setRenameModal({ nodeId: id, label }); setRenameLabel(label); }}
+            onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
             onHover={handleHover}
           />
         ) : (
@@ -654,14 +656,8 @@ export default function MindMapCanvas() {
               <ListItemButton onClick={() => { setContextMenu(null); setCreating({ parentId: contextMenu.nodeId }); setNewNodeLabel(""); }}>
                 <ListItemText primary="+ Add child node" />
               </ListItemButton>
-              <ListItemButton onClick={() => { if (n) { setRenameModal({ nodeId: n.id, label: n.label }); setRenameLabel(n.label); } setContextMenu(null); }}>
-                <ListItemText primary="Rename" />
-              </ListItemButton>
-              <ListItemButton onClick={() => { if (n) setNotesPanel({ nodeId: n.id, notes: n.notes ?? "" }); setContextMenu(null); }}>
-                <ListItemText primary="Edit notes" />
-              </ListItemButton>
-              <ListItemButton onClick={() => { if (n) setEditNodePanel({ nodeId: n.id, ikigaiCategory: n.ikigaiCategory ?? "", icon: n.icon ?? "" }); setContextMenu(null); }}>
-                <ListItemText primary="✨ Edit category & icon" />
+              <ListItemButton onClick={() => { if (n) openEditPanel(n.id); setContextMenu(null); }}>
+                <ListItemText primary="✏️ Edit node" />
               </ListItemButton>
               {(n?.nodeType === "Leaf" || n?.nodeType === "Branch") && (
                 <ListItemButton onClick={() => { setConvertModal({ nodeId: contextMenu.nodeId }); setConvertGoalType(null); setConvertLifeArea("CareerWork"); setContextMenu(null); }}>
@@ -698,63 +694,67 @@ export default function MindMapCanvas() {
         </DialogActions>
       </Dialog>
 
-      {/* ── Rename dialog ───────────────────────────────────────────────────── */}
-      <Dialog open={!!renameModal} onClose={() => setRenameModal(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Rename</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus fullWidth label="Label" value={renameLabel}
-            onChange={(e) => setRenameLabel(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleRenameSave(); if (e.key === "Escape") setRenameModal(null); }}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setRenameModal(null)}>Cancel</Button>
-          <Button variant="contained" onClick={handleRenameSave} disabled={!renameLabel.trim()}>Save</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ── Notes side panel ─────────────────────────────────────────────────── */}
-      {notesPanel && (
-        <Paper
-          elevation={4}
-          sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 320, zIndex: 900, display: "flex", flexDirection: "column", borderRadius: 0 }}
-        >
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2.5, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
-            <Typography variant="subtitle2" fontWeight={600}>Notes</Typography>
-            <IconButton size="small" onClick={() => setNotesPanel(null)}>✕</IconButton>
-          </Stack>
-          <TextField
-            multiline fullWidth placeholder="Add notes about this node…"
-            value={notesPanel.notes}
-            onChange={(e) => setNotesPanel({ ...notesPanel, notes: e.target.value })}
-            variant="standard" InputProps={{ disableUnderline: true }}
-            sx={{ flex: 1, "& .MuiInputBase-root": { height: "100%", alignItems: "flex-start", p: 2.5 } }}
-          />
-          <Box sx={{ px: 2.5, py: 2, borderTop: 1, borderColor: "divider" }}>
-            <Button variant="contained" fullWidth onClick={handleNotesSave} sx={{ borderRadius: 3 }}>Save notes</Button>
-          </Box>
-        </Paper>
+      {/* ── Inline label edit overlay ─────────────────────────────────────── */}
+      {inlineEdit && (
+        <input
+          autoFocus
+          value={inlineEditValue}
+          onChange={(e) => setInlineEditValue(e.target.value)}
+          onBlur={handleInlineEditSave}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.currentTarget.blur(); }
+            if (e.key === "Escape") { setInlineEdit(null); }
+          }}
+          style={{
+            position: "fixed",
+            left: inlineEdit.x,
+            top: inlineEdit.y - 16,
+            zIndex: 2100,
+            border: "2px solid #0D6E6E",
+            borderRadius: 6,
+            padding: "3px 10px",
+            fontSize: 14,
+            fontFamily: "Inter, sans-serif",
+            background: "white",
+            outline: "none",
+            minWidth: 150,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.18)",
+          }}
+        />
       )}
 
-      {/* ── Edit node panel (IkigaiCategory + Icon) ─────────────────────────── */}
-      {editNodePanel && (
+      {/* ── Unified edit node panel ──────────────────────────────────────────── */}
+      {editPanel && (
         <Paper
           elevation={4}
           sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 320, zIndex: 900, display: "flex", flexDirection: "column", borderRadius: 0 }}
+          onClick={(e) => e.stopPropagation()}
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2.5, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
-            <Typography variant="subtitle2" fontWeight={600}>Edit category & icon</Typography>
-            <IconButton size="small" onClick={() => setEditNodePanel(null)}>✕</IconButton>
+            <Typography variant="subtitle2" fontWeight={600}>Edit node</Typography>
+            <IconButton size="small" onClick={() => setEditPanel(null)}>✕</IconButton>
           </Stack>
-          <Stack spacing={2.5} sx={{ p: 2.5, flex: 1 }}>
+          <Stack spacing={2.5} sx={{ p: 2.5, flex: 1, overflowY: "auto" }}>
+            <TextField
+              size="small" label="Label" fullWidth
+              value={editPanel.label}
+              onChange={(e) => setEditPanel({ ...editPanel, label: e.target.value })}
+              onKeyDown={(e) => { if (e.key === "Enter") handleEditPanelSave(); }}
+            />
+            <TextField
+              size="small" label="Icon" placeholder="e.g. 🎯 or 📚"
+              value={editPanel.icon}
+              onChange={(e) => setEditPanel({ ...editPanel, icon: e.target.value })}
+              helperText="Paste any emoji"
+              inputProps={{ maxLength: 10 }}
+              fullWidth
+            />
             <FormControl fullWidth size="small">
               <InputLabel>Ikigai category</InputLabel>
               <Select
                 label="Ikigai category"
-                value={editNodePanel.ikigaiCategory}
-                onChange={(e) => setEditNodePanel({ ...editNodePanel, ikigaiCategory: e.target.value })}
+                value={editPanel.ikigaiCategory}
+                onChange={(e) => setEditPanel({ ...editPanel, ikigaiCategory: e.target.value })}
               >
                 <MenuItem value="">None</MenuItem>
                 {Object.entries(IKIGAI_CATEGORY_CONFIG).map(([key, cfg]) => (
@@ -763,18 +763,35 @@ export default function MindMapCanvas() {
               </Select>
             </FormControl>
             <TextField
-              size="small"
-              label="Icon"
-              placeholder="e.g. 🎯 or 📚"
-              value={editNodePanel.icon}
-              onChange={(e) => setEditNodePanel({ ...editNodePanel, icon: e.target.value })}
-              helperText="Paste any emoji"
-              inputProps={{ maxLength: 10 }}
+              size="small" label="Notes" multiline rows={4} fullWidth
+              placeholder="Add notes about this node…"
+              value={editPanel.notes}
+              onChange={(e) => setEditPanel({ ...editPanel, notes: e.target.value })}
             />
+            {(editPanel.nodeType === "Branch" || editPanel.nodeType === "Leaf") && (
+              <FormControl fullWidth size="small">
+                <InputLabel>Life area</InputLabel>
+                <Select
+                  label="Life area"
+                  value={editPanel.lifeArea}
+                  onChange={(e) => setEditPanel({ ...editPanel, lifeArea: e.target.value })}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {LIFE_AREA_NAMES.map((name, i) => (
+                    <MenuItem key={LIFE_AREA_KEYS[i]} value={LIFE_AREA_KEYS[i]}>{name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Stack>
-          <Box sx={{ px: 2.5, py: 2, borderTop: 1, borderColor: "divider" }}>
-            <Button variant="contained" fullWidth onClick={handleEditNodeSave} sx={{ borderRadius: 3 }}>Save</Button>
-          </Box>
+          <Stack sx={{ px: 2.5, py: 2, borderTop: 1, borderColor: "divider" }} spacing={1}>
+            <Button variant="contained" fullWidth onClick={handleEditPanelSave} disabled={!editPanel.label.trim()} sx={{ borderRadius: 3 }}>Save</Button>
+            {editPanel.nodeType !== "Root" && (
+              <Button variant="outlined" color="error" fullWidth onClick={() => handleDeleteRequest(editPanel.nodeId)} sx={{ borderRadius: 3 }}>
+                Delete node
+              </Button>
+            )}
+          </Stack>
         </Paper>
       )}
 

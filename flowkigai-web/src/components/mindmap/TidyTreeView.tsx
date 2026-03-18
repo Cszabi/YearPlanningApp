@@ -81,7 +81,7 @@ export interface TidyTreeViewProps {
   onZoomIn: (nodeId: string) => void;
   onZoomOut: () => void;
   onContextMenu: (nodeId: string, x: number, y: number) => void;
-  onRename: (nodeId: string, label: string) => void;
+  onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
 }
 
@@ -150,7 +150,7 @@ export default function TidyTreeView({
               if (isRoot && canGoUp) { onZoomOut(); return; }
               if (!isRoot && canClick) onZoomIn(d.data.id);
             }}
-            onDoubleClick={(e) => { e.stopPropagation(); if (!isRoot) onRename(d.data.id, d.data.label); }}
+            onDoubleClick={(e) => { e.stopPropagation(); if (!isRoot) onRename(d.data.id, d.data.label, e.clientX, e.clientY); }}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
