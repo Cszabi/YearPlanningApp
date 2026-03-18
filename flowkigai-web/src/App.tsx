@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import TabNav from "@/components/layout/TabNav";
 import AdminGuard from "@/components/layout/AdminGuard";
+import InstallPromptBanner from "@/components/layout/InstallPromptBanner";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
@@ -34,6 +35,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <InstallPromptBanner />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
