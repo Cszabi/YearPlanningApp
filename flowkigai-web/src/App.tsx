@@ -8,6 +8,8 @@ import PushPermissionPrompt from "@/components/layout/PushPermissionPrompt";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import IkigaiPage from "@/pages/IkigaiPage";
 import MindMapPage from "@/pages/MindMapPage";
 import GoalsPage from "@/pages/GoalsPage";
@@ -44,6 +46,8 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/docs" element={<Navigate to="/" replace />} />
 
           {/* Protected routes — TabNav redirects to / if not authenticated */}

@@ -19,6 +19,8 @@ export function usePushNotifications() {
     "PushManager" in window;
 
   const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
   const [vapidPublicKey, setVapidPublicKey] = useState<string | null>(null);
 
   // Load VAPID public key once
@@ -38,36 +40,60 @@ export function usePushNotifications() {
 
   const subscribeToPush = useCallback(async () => {
     if (!isPushSupported || !vapidPublicKey) return;
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return;
+    setSubscribeError(null);
+    setIsSubscribing(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === "denied") {
+        setSubscribeError("Notification permission was denied. Enable it in your browser settings.");
+        return;
+      }
+      if (permission !== "granted") return;
 
-    const reg = await navigator.serviceWorker.ready;
-    const subscription = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-    });
+      const reg = await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
 
-    const json = subscription.toJSON();
-    await notificationApi.subscribe({
-      endpoint: json.endpoint!,
-      p256dh: json.keys?.p256dh ?? "",
-      auth: json.keys?.auth ?? "",
-      userAgent: navigator.userAgent,
-    });
+      const json = subscription.toJSON();
+      await notificationApi.subscribe({
+        endpoint: json.endpoint!,
+        p256dh: json.keys?.p256dh ?? "",
+        auth: json.keys?.auth ?? "",
+        userAgent: navigator.userAgent,
+      });
 
-    setIsPushEnabled(true);
+      setIsPushEnabled(true);
+    } catch (err) {
+      console.error("Push subscribe failed:", err);
+      setSubscribeError("Failed to enable notifications. Please try again.");
+    } finally {
+      setIsSubscribing(false);
+    }
   }, [isPushSupported, vapidPublicKey]);
 
   const unsubscribeFromPush = useCallback(async () => {
     if (!isPushSupported) return;
-    const reg = await navigator.serviceWorker.ready;
-    const subscription = await reg.pushManager.getSubscription();
-    if (!subscription) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const subscription = await reg.pushManager.getSubscription();
+      if (!subscription) return;
 
-    await notificationApi.unsubscribe(subscription.endpoint);
-    await subscription.unsubscribe();
-    setIsPushEnabled(false);
+      await notificationApi.unsubscribe(subscription.endpoint);
+      await subscription.unsubscribe();
+      setIsPushEnabled(false);
+    } catch (err) {
+      console.error("Push unsubscribe failed:", err);
+    }
   }, [isPushSupported]);
 
-  return { isPushSupported, isPushEnabled, subscribeToPush, unsubscribeFromPush };
+  return {
+    isPushSupported,
+    isPushEnabled,
+    isSubscribing,
+    subscribeError,
+    subscribeToPush,
+    unsubscribeFromPush,
+  };
 }

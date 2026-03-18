@@ -32,6 +32,8 @@ export function getFocusColor(node: MindMapNodeDto): string {
     case "Dropped":  return "#9CA3AF"; // grey
     case "Paused":   return "#F5A623"; // amber
     default: { // Active
+      // No tasks and no milestones = no progress data → treat as "no data"
+      if (node.taskCount === 0 && !node.hasMilestones) return "#9CA3AF";
       if (node.goalTargetDate) {
         const daysLeft = Math.ceil((new Date(node.goalTargetDate).getTime() - Date.now()) / 86400000);
         if (daysLeft <= 30) return "#E8705A"; // coral = at risk
@@ -48,6 +50,52 @@ export const FOCUS_LEGEND = [
   { color: "#10B981", label: "Achieved" },
   { color: "#9CA3AF", label: "Dropped / no data" },
 ];
+
+// Priority order for aggregating child goal colours onto parent nodes
+// (most urgent first — first match wins)
+const FOCUS_COLOR_PRIORITY = ["#E8705A", "#F5A623", "#0D6E6E", "#10B981", "#9CA3AF"];
+
+/**
+ * Builds a Map<nodeId, focusColor> for every node in the list.
+ * Goal nodes get their own colour via getFocusColor.
+ * Non-goal nodes get the "worst" (highest-priority) colour among their
+ * goal descendants; nodes with no goal descendants are omitted from the map.
+ */
+export function buildFocusColorMap(nodes: MindMapNodeDto[]): Map<string, string> {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const childrenMap = new Map<string, string[]>();
+  for (const n of nodes) {
+    if (n.parentNodeId) {
+      if (!childrenMap.has(n.parentNodeId)) childrenMap.set(n.parentNodeId, []);
+      childrenMap.get(n.parentNodeId)!.push(n.id);
+    }
+  }
+
+  const cache = new Map<string, string | null>();
+  function worstGoalColor(id: string): string | null {
+    if (cache.has(id)) return cache.get(id) as string | null;
+    const n = nodeMap.get(id);
+    if (!n) { cache.set(id, null); return null; }
+    let result: string | null;
+    if (n.nodeType === "Goal") {
+      result = getFocusColor(n);
+    } else {
+      const childColors = (childrenMap.get(id) ?? [])
+        .map(worstGoalColor)
+        .filter(Boolean) as string[];
+      result = FOCUS_COLOR_PRIORITY.find((c) => childColors.includes(c)) ?? null;
+    }
+    cache.set(id, result);
+    return result;
+  }
+
+  const map = new Map<string, string>();
+  for (const n of nodes) {
+    const c = worstGoalColor(n.id);
+    if (c !== null) map.set(n.id, c);
+  }
+  return map;
+}
 
 // ── Ikigai category config ─────────────────────────────────────────────────────
 

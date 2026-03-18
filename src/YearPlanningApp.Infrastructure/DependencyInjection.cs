@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
+        services.AddSingleton<IAppSettings>(_ => new AppSettings(configuration));
+
         services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
         services.AddTransient<IEmailService, SmtpEmailService>();
 

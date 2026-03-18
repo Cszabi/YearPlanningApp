@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import type { HierarchyPointNode } from "d3";
 import type { MindMapNodeDto } from "@/api/mindMapApi";
-import { LIFE_AREA_COLORS, getFocusColor } from "./nodes";
+import { LIFE_AREA_COLORS } from "./nodes";
 
 // Horizontal left-to-right tidy tree layout (Reingold–Tilford via d3.tree)
 // ViewBox 1000×1000, root on the left, leaves on the right.
@@ -84,6 +84,7 @@ export interface TidyTreeViewProps {
   onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
   focusMode?: boolean;
+  focusColorMap?: Map<string, string>;
 }
 
 export default function TidyTreeView({
@@ -95,9 +96,17 @@ export default function TidyTreeView({
   onRename,
   onHover,
   focusMode = false,
+  focusColorMap,
 }: TidyTreeViewProps) {
   const root = useMemo(() => buildTidyTree(nodes), [nodes]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function startLP(id: string, x: number, y: number) {
+    lpTimer.current = setTimeout(() => { onContextMenu(id, x, y); lpTimer.current = null; }, 600);
+  }
+  function cancelLP() {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }
 
   if (!root) return null;
 
@@ -135,7 +144,9 @@ export default function TidyTreeView({
       {descendants.map((d) => {
         const isRoot = d.depth === 0;
         const isGoal = d.data.nodeType === "Goal";
-        const color = (focusMode && isGoal) ? getFocusColor(d.data) : getBranchColor(d);
+        const color = (focusMode && focusColorMap?.has(d.data.id))
+          ? focusColorMap.get(d.data.id)!
+          : getBranchColor(d);
         const isHovered = hoveredId === d.data.id;
         const nodeIcon = d.data.icon ? d.data.icon + " " : "";
         const labelText = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
@@ -163,6 +174,9 @@ export default function TidyTreeView({
             }}
             onMouseMove={(e) => { if (!isRoot) onHover(d.data.label, e.clientX, e.clientY); }}
             onMouseLeave={() => { setHoveredId(null); onHover(null, 0, 0); }}
+            onTouchStart={(e) => { e.stopPropagation(); if (!isRoot) startLP(d.data.id, e.touches[0].clientX, e.touches[0].clientY); }}
+            onTouchEnd={cancelLP}
+            onTouchMove={cancelLP}
             style={{ cursor: isRoot ? (canGoUp ? "pointer" : "default") : (canClick ? "pointer" : "default") }}
           >
             <circle

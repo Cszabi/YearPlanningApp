@@ -13,6 +13,8 @@ public class User : BaseEntity
     public string? CalendarProvider { get; set; }  // "google" | "outlook" | null
     public UserRole Role { get; set; } = UserRole.User;
     public UserPlan Plan { get; set; } = UserPlan.Free;
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public ICollection<IkigaiJourney> IkigaiJourneys { get; set; } = new List<IkigaiJourney>();
     public ICollection<Goal> Goals { get; set; } = new List<Goal>();
     public ICollection<FlowSession> FlowSessions { get; set; } = new List<FlowSession>();

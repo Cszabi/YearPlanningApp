@@ -14,9 +14,9 @@ import {
   Button, TextField, MenuItem, Select, FormControl, InputLabel,
   Typography, Stack, Divider, Paper, IconButton, Box,
   List, ListItemButton, ListItemText,
-  ToggleButtonGroup, ToggleButton, Alert,
+  ToggleButtonGroup, ToggleButton, Alert, Checkbox, useMediaQuery,
 } from "@mui/material";
-import { IKIGAI_CATEGORY_CONFIG, getFocusColor, FOCUS_LEGEND } from "./nodes";
+import { IKIGAI_CATEGORY_CONFIG, getFocusColor, FOCUS_LEGEND, buildFocusColorMap } from "./nodes";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
@@ -175,10 +175,18 @@ interface SunburstSvgProps {
   onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
   focusMode?: boolean;
+  focusColorMap?: Map<string, string>;
 }
 
-function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRename, onHover, focusMode = false }: SunburstSvgProps) {
+function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRename, onHover, focusMode = false, focusColorMap }: SunburstSvgProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function startLP(id: string, x: number, y: number) {
+    lpTimer.current = setTimeout(() => { onContextMenu(id, x, y); lpTimer.current = null; }, 600);
+  }
+  function cancelLP() {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }
 
   const { arcs, centerR, centerLabel } = useMemo(() => {
     const xs = d3.scaleLinear().domain([root.x0, root.x1]).range([0, 2 * Math.PI]).clamp(true);
@@ -230,7 +238,9 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
       {arcs.map(({ d, path, color, showLabel, labelTransform, arcLen, ringW }) => {
         const isHovered = hoveredId === d.data.id;
         const isGoal = d.data.nodeType === "Goal";
-        const arcColor = (focusMode && isGoal) ? getFocusColor(d.data) : color;
+        const arcColor = (focusMode && focusColorMap?.has(d.data.id))
+          ? focusColorMap.get(d.data.id)!
+          : color;
         const nodeIcon = d.data.icon ? d.data.icon + " " : "";
         const rawLabel = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
         const { lines, fs: lineFs } = wrapLabel(rawLabel, arcLen, ringW, fs);
@@ -262,6 +272,9 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
               onMouseEnter={(e) => { setHoveredId(d.data.id); onHover(d.data.label, e.clientX, e.clientY); }}
               onMouseMove={(e) => onHover(d.data.label, e.clientX, e.clientY)}
               onMouseLeave={() => { setHoveredId(null); onHover(null, 0, 0); }}
+              onTouchStart={(e) => { e.stopPropagation(); startLP(d.data.id, e.touches[0].clientX, e.touches[0].clientY); }}
+              onTouchEnd={cancelLP}
+              onTouchMove={cancelLP}
             />
             {showLabel && (
               <text
@@ -306,6 +319,9 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
           e.stopPropagation();
           onContextMenu(root.data.id, e.clientX, e.clientY);
         }}
+        onTouchStart={(e) => { e.stopPropagation(); startLP(root.data.id, e.touches[0].clientX, e.touches[0].clientY); }}
+        onTouchEnd={cancelLP}
+        onTouchMove={cancelLP}
       />
       <text
         textAnchor="middle"
@@ -347,8 +363,12 @@ export default function MindMapCanvas() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>("sunburst");
+  const isMobile = useMediaQuery("(max-width: 600px)");
   const [focusMode, setFocusMode] = useState(false);
   const [deadlineFilter, setDeadlineFilter] = useState<number | null>(null);
+  const [visibleFocusColors, setVisibleFocusColors] = useState<Set<string>>(
+    () => new Set(FOCUS_LEGEND.map((l) => l.color))
+  );
 
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const [creating, setCreating] = useState<{ parentId: string } | null>(null);
@@ -425,7 +445,83 @@ export default function MindMapCanvas() {
     return displayNodes.filter((n) => neededIds.has(n.id));
   }, [displayNodes, deadlineFilter]);
 
-  const root = useMemo(() => buildPartition(filteredDisplayNodes), [filteredDisplayNodes]);
+  const focusFilteredNodes = useMemo(() => {
+    if (!focusMode) return filteredDisplayNodes;
+
+    const nodeMap = new Map(filteredDisplayNodes.map((n) => [n.id, n]));
+    const childrenMap = new Map<string, string[]>();
+    for (const n of filteredDisplayNodes) {
+      if (n.parentNodeId) {
+        if (!childrenMap.has(n.parentNodeId)) childrenMap.set(n.parentNodeId, []);
+        childrenMap.get(n.parentNodeId)!.push(n.id);
+      }
+    }
+
+    // Goals whose colour is unchecked in the legend
+    const excludedGoalIds = new Set(
+      filteredDisplayNodes
+        .filter((n) => n.nodeType === "Goal" && !visibleFocusColors.has(getFocusColor(n)))
+        .map((n) => n.id)
+    );
+
+    // Does this node's subtree contain any goal?
+    const anyGoalCache = new Map<string, boolean>();
+    function hasAnyGoal(id: string): boolean {
+      if (anyGoalCache.has(id)) return anyGoalCache.get(id)!;
+      const n = nodeMap.get(id);
+      if (!n) { anyGoalCache.set(id, false); return false; }
+      const result = n.nodeType === "Goal"
+        ? true
+        : (childrenMap.get(id) ?? []).some(hasAnyGoal);
+      anyGoalCache.set(id, result);
+      return result;
+    }
+
+    // Does this node's subtree contain at least one *visible* (unchecked) goal?
+    const visibleGoalCache = new Map<string, boolean>();
+    function hasVisibleGoal(id: string): boolean {
+      if (visibleGoalCache.has(id)) return visibleGoalCache.get(id)!;
+      const n = nodeMap.get(id);
+      if (!n) { visibleGoalCache.set(id, false); return false; }
+      const result = n.nodeType === "Goal"
+        ? !excludedGoalIds.has(id)
+        : (childrenMap.get(id) ?? []).some(hasVisibleGoal);
+      visibleGoalCache.set(id, result);
+      return result;
+    }
+
+    const excludedIds = new Set<string>();
+    for (const n of filteredDisplayNodes) {
+      if (n.nodeType === "Root") continue; // root is always visible
+      if (n.nodeType === "Goal") {
+        if (excludedGoalIds.has(n.id)) excludedIds.add(n.id);
+      } else {
+        // Hide a non-goal parent only when it has goal descendants and none are visible
+        if (hasAnyGoal(n.id) && !hasVisibleGoal(n.id)) excludedIds.add(n.id);
+      }
+    }
+
+    // Propagate downward so no orphan nodes remain
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const n of filteredDisplayNodes) {
+        if (!excludedIds.has(n.id) && n.parentNodeId !== null && excludedIds.has(n.parentNodeId)) {
+          excludedIds.add(n.id);
+          changed = true;
+        }
+      }
+    }
+
+    return filteredDisplayNodes.filter((n) => !excludedIds.has(n.id));
+  }, [filteredDisplayNodes, focusMode, visibleFocusColors]);
+
+  const focusColorMap = useMemo(
+    () => focusMode ? buildFocusColorMap(focusFilteredNodes) : new Map<string, string>(),
+    [focusFilteredNodes, focusMode]
+  );
+
+  const root = useMemo(() => buildPartition(focusFilteredNodes), [focusFilteredNodes]);
 
   const focusedParentId = useMemo(
     () => (focusedId ? (apiNodes.find((n) => n.id === focusedId)?.parentNodeId ?? null) : null),
@@ -567,11 +663,11 @@ export default function MindMapCanvas() {
     <div
       ref={containerRef}
       className="w-full h-full relative select-none"
-      style={{ background: "var(--bg-app)" }}
+      style={{ background: "var(--bg-app)", touchAction: "none" }}
       onClick={() => setContextMenu(null)}
     >
       {/* View switcher */}
-      <Box sx={{ position: "absolute", top: 12, left: 12, zIndex: 10 }}>
+      <Box sx={{ position: "absolute", top: 12, left: isMobile ? 56 : 12, zIndex: 10 }}>
         <ToggleButtonGroup
           value={viewMode}
           exclusive
@@ -580,8 +676,8 @@ export default function MindMapCanvas() {
           sx={{ bgcolor: "background.paper", borderRadius: 2, boxShadow: 1 }}
         >
           {VIEW_OPTIONS.map((opt) => (
-            <ToggleButton key={opt.value} value={opt.value} sx={{ px: 1.5, fontSize: "0.72rem", gap: 0.5 }}>
-              {opt.icon} {opt.label}
+            <ToggleButton key={opt.value} value={opt.value} sx={{ px: isMobile ? 0.75 : 1.5, fontSize: "0.72rem", gap: isMobile ? 0 : 0.5, minWidth: isMobile ? 36 : undefined }}>
+              {isMobile ? opt.icon : `${opt.icon} ${opt.label}`}
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
@@ -589,40 +685,46 @@ export default function MindMapCanvas() {
 
       {/* Toolbar */}
       <Stack direction="row" spacing={1} sx={{ position: "absolute", top: 12, right: 16, zIndex: 10 }}>
-        {/* Deadline filter */}
-        <Select
-          size="small"
-          value={deadlineFilter?.toString() ?? ""}
-          onChange={(e) => setDeadlineFilter(e.target.value === "" ? null : Number(e.target.value))}
-          displayEmpty
-          sx={{ bgcolor: "background.paper", borderRadius: 2, fontSize: "0.78rem", minWidth: 130, height: 36 }}
-        >
-          <MenuItem value="">All deadlines</MenuItem>
-          <MenuItem value="7">Due in 7 days</MenuItem>
-          <MenuItem value="14">Due in 14 days</MenuItem>
-          <MenuItem value="30">Due in 30 days</MenuItem>
-        </Select>
+        {/* Deadline filter — hidden on mobile */}
+        {!isMobile && (
+          <Select
+            size="small"
+            value={deadlineFilter?.toString() ?? ""}
+            onChange={(e) => setDeadlineFilter(e.target.value === "" ? null : Number(e.target.value))}
+            displayEmpty
+            sx={{ bgcolor: "background.paper", borderRadius: 2, fontSize: "0.78rem", minWidth: 130, height: 36 }}
+          >
+            <MenuItem value="">All deadlines</MenuItem>
+            <MenuItem value="7">Due in 7 days</MenuItem>
+            <MenuItem value="14">Due in 14 days</MenuItem>
+            <MenuItem value="30">Due in 30 days</MenuItem>
+          </Select>
+        )}
 
         {/* Focus mode toggle */}
         <Button
           size="small"
           variant={focusMode ? "contained" : "outlined"}
           onClick={() => setFocusMode((v) => !v)}
-          sx={{ borderRadius: 3, bgcolor: focusMode ? "primary.main" : "background.paper", minWidth: 100 }}
+          sx={{ borderRadius: 3, bgcolor: focusMode ? "primary.main" : "background.paper", minWidth: isMobile ? 36 : 100, px: isMobile ? 0.5 : undefined }}
         >
-          🎯 Focus
+          {isMobile ? "🎯" : "🎯 Focus"}
         </Button>
 
         {focusedId && (
-          <Button size="small" variant="outlined" startIcon={<ArrowBackIcon />}
-            onClick={() => setFocusedId(focusedParentId)} sx={{ borderRadius: 3, bgcolor: "background.paper" }}>
-            Back
+          <Button size="small" variant="outlined"
+            startIcon={isMobile ? undefined : <ArrowBackIcon />}
+            onClick={() => setFocusedId(focusedParentId)}
+            sx={{ borderRadius: 3, bgcolor: "background.paper", minWidth: isMobile ? 36 : undefined, px: isMobile ? 0.5 : undefined }}>
+            {isMobile ? <ArrowBackIcon fontSize="small" /> : "Back"}
           </Button>
         )}
         {addParentId && (
-          <Button size="small" variant="contained" startIcon={<AddCircleOutlineIcon />}
-            onClick={() => { setCreating({ parentId: addParentId }); setNewNodeLabel(""); }} sx={{ borderRadius: 3 }}>
-            Add node
+          <Button size="small" variant="contained"
+            startIcon={isMobile ? undefined : <AddCircleOutlineIcon />}
+            onClick={() => { setCreating({ parentId: addParentId }); setNewNodeLabel(""); }}
+            sx={{ borderRadius: 3, minWidth: isMobile ? 36 : undefined, px: isMobile ? 0.5 : undefined }}>
+            {isMobile ? <AddCircleOutlineIcon fontSize="small" /> : "Add node"}
           </Button>
         )}
       </Stack>
@@ -631,9 +733,11 @@ export default function MindMapCanvas() {
       {!focusedId && (
         <Typography variant="caption" color="text.disabled"
           sx={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
-          {viewMode === "sunburst"
-            ? "Click a section to zoom in · Right-click for options"
-            : "Click a node to zoom in · Right-click for options"}
+          {isMobile
+            ? "Tap to zoom · Long-press for options"
+            : viewMode === "sunburst"
+              ? "Click a section to zoom in · Right-click for options"
+              : "Click a node to zoom in · Right-click for options"}
         </Typography>
       )}
 
@@ -641,9 +745,21 @@ export default function MindMapCanvas() {
       {focusMode && (
         <Paper elevation={2} sx={{ position: "absolute", bottom: 40, left: 12, zIndex: 10, px: 2, py: 1.5, borderRadius: 2 }}>
           <Typography variant="caption" fontWeight={600} sx={{ display: "block", mb: 0.5 }}>Goal status</Typography>
-          <Stack spacing={0.5}>
+          <Stack spacing={0.25}>
             {FOCUS_LEGEND.map(({ color, label }) => (
-              <Stack key={label} direction="row" alignItems="center" spacing={1}>
+              <Stack key={label} direction="row" alignItems="center" spacing={0.5}>
+                <Checkbox
+                  size="small"
+                  checked={visibleFocusColors.has(color)}
+                  onChange={(e) => {
+                    setVisibleFocusColors((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(color); else next.delete(color);
+                      return next;
+                    });
+                  }}
+                  sx={{ p: 0.25 }}
+                />
                 <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
                 <Typography variant="caption" color="text.secondary">{label}</Typography>
               </Stack>
@@ -685,15 +801,16 @@ export default function MindMapCanvas() {
               onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
               onHover={handleHover}
               focusMode={focusMode}
+              focusColorMap={focusColorMap}
             />
           </g>
         </svg>
       )}
 
       {viewMode === "radial-tree" && (
-        filteredDisplayNodes.some((n) => n.parentNodeId === null) ? (
+        focusFilteredNodes.some((n) => n.parentNodeId === null) ? (
           <RadialTreeView
-            nodes={filteredDisplayNodes}
+            nodes={focusFilteredNodes}
             canGoUp={focusedId !== null}
             onZoomIn={setFocusedId}
             onZoomOut={() => setFocusedId(focusedParentId)}
@@ -701,6 +818,7 @@ export default function MindMapCanvas() {
             onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
             onHover={handleHover}
             focusMode={focusMode}
+            focusColorMap={focusColorMap}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3">
@@ -711,9 +829,9 @@ export default function MindMapCanvas() {
       )}
 
       {viewMode === "tidy-tree" && (
-        filteredDisplayNodes.some((n) => n.parentNodeId === null) ? (
+        focusFilteredNodes.some((n) => n.parentNodeId === null) ? (
           <TidyTreeView
-            nodes={filteredDisplayNodes}
+            nodes={focusFilteredNodes}
             canGoUp={focusedId !== null}
             onZoomIn={setFocusedId}
             onZoomOut={() => setFocusedId(focusedParentId)}
@@ -721,6 +839,7 @@ export default function MindMapCanvas() {
             onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
             onHover={handleHover}
             focusMode={focusMode}
+            focusColorMap={focusColorMap}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3">
@@ -814,7 +933,10 @@ export default function MindMapCanvas() {
       {editPanel && (
         <Paper
           elevation={4}
-          sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 320, zIndex: 900, display: "flex", flexDirection: "column", borderRadius: 0 }}
+          sx={isMobile
+            ? { position: "fixed", left: 0, right: 0, bottom: 0, maxHeight: "75vh", zIndex: 1200, display: "flex", flexDirection: "column", borderTopLeftRadius: 12, borderTopRightRadius: 12 }
+            : { position: "absolute", right: 0, top: 0, bottom: 0, width: 320, zIndex: 900, display: "flex", flexDirection: "column", borderRadius: 0 }
+          }
           onClick={(e) => e.stopPropagation()}
         >
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2.5, py: 1.5, borderBottom: 1, borderColor: "divider" }}>

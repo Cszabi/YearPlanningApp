@@ -22,7 +22,7 @@ function parseDaysList(json: string): number[] {
 
 export default function NotificationSettingsPage() {
   const qc = useQueryClient();
-  const { isPushSupported, isPushEnabled, subscribeToPush, unsubscribeFromPush } =
+  const { isPushSupported, isPushEnabled, isSubscribing, subscribeError, subscribeToPush, unsubscribeFromPush } =
     usePushNotifications();
 
   const { data, isLoading, isError } = useQuery({
@@ -93,6 +93,8 @@ export default function NotificationSettingsPage() {
             <Typography variant="body2" color="text.secondary">
               {!isPushSupported
                 ? "Not supported in this browser"
+                : isSubscribing
+                ? "Requesting permission…"
                 : isPushEnabled
                 ? "Active on this device"
                 : "Not enabled"}
@@ -101,12 +103,16 @@ export default function NotificationSettingsPage() {
           {isPushSupported && (
             <Switch
               checked={isPushEnabled}
+              disabled={isSubscribing}
               onChange={() =>
                 isPushEnabled ? unsubscribeFromPush() : subscribeToPush()
               }
             />
           )}
         </Stack>
+        {subscribeError && (
+          <Alert severity="error" sx={{ mt: 1.5 }}>{subscribeError}</Alert>
+        )}
       </Paper>
 
       {/* ── Weekly review ─────────────────────────────────────────────── */}

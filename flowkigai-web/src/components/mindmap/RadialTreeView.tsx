@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import type { HierarchyPointNode } from "d3";
 import type { MindMapNodeDto } from "@/api/mindMapApi";
-import { LIFE_AREA_COLORS, getFocusColor } from "./nodes";
+import { LIFE_AREA_COLORS } from "./nodes";
 
 const VB = 1000;
 const TREE_R = 360;  // tighter rings
@@ -77,6 +77,7 @@ export interface RadialTreeViewProps {
   onRename: (nodeId: string, label: string, x: number, y: number) => void;
   onHover: (label: string | null, x: number, y: number) => void;
   focusMode?: boolean;
+  focusColorMap?: Map<string, string>;
 }
 
 export default function RadialTreeView({
@@ -88,9 +89,17 @@ export default function RadialTreeView({
   onRename,
   onHover,
   focusMode = false,
+  focusColorMap,
 }: RadialTreeViewProps) {
   const root = useMemo(() => buildRadialTree(nodes), [nodes]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function startLP(id: string, x: number, y: number) {
+    lpTimer.current = setTimeout(() => { onContextMenu(id, x, y); lpTimer.current = null; }, 600);
+  }
+  function cancelLP() {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }
 
   if (!root) return null;
 
@@ -131,7 +140,9 @@ export default function RadialTreeView({
           .filter((d) => d.depth > 0)
           .map((d) => {
             const isGoal = d.data.nodeType === "Goal";
-            const color = (focusMode && isGoal) ? getFocusColor(d.data) : getBranchColor(d);
+            const color = (focusMode && focusColorMap?.has(d.data.id))
+              ? focusColorMap.get(d.data.id)!
+              : getBranchColor(d);
             const isHovered = hoveredId === d.data.id;
             const nodeIcon = d.data.icon ? d.data.icon + " " : "";
             const label = nodeIcon + (isGoal ? "🎯 " : "") + d.data.label;
@@ -153,6 +164,9 @@ export default function RadialTreeView({
                 onMouseEnter={(e) => { setHoveredId(d.data.id); onHover(d.data.label, e.clientX, e.clientY); }}
                 onMouseMove={(e) => onHover(d.data.label, e.clientX, e.clientY)}
                 onMouseLeave={() => { setHoveredId(null); onHover(null, 0, 0); }}
+                onTouchStart={(e) => { e.stopPropagation(); startLP(d.data.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                onTouchEnd={cancelLP}
+                onTouchMove={cancelLP}
                 style={{ cursor: canClick ? "pointer" : "default" }}
               >
                 <circle

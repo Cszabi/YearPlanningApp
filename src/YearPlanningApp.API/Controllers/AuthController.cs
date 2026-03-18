@@ -75,7 +75,29 @@ public class AuthController : ControllerBase
             error => Unauthorized(Envelope.Unauthorized(error.Message))
         );
     }
+
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
+    {
+        await _mediator.Send(new ForgotPasswordCommand(request.Email), ct);
+        return Ok(Envelope.Success<object?>(null));
+    }
+
+    [HttpPost("reset-password")]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ResetPasswordCommand(request.Token, request.NewPassword), ct);
+        return result.Match(
+            _ => (IActionResult)Ok(Envelope.Success<object?>(null)),
+            error => Unauthorized(Envelope.Unauthorized(error.Message)),
+            error => BadRequest(Envelope.ValidationError(error))
+        );
+    }
 }
 
 public record LogoutRequest(string RefreshToken);
 public record DeleteAccountRequest(string PasswordConfirmation);
+public record ForgotPasswordRequest(string Email);
+public record ResetPasswordRequest(string Token, string NewPassword);

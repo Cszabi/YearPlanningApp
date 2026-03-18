@@ -30,6 +30,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Only handle http/https — ignore chrome-extension://, data:, etc.
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // In development (localhost) bypass the SW entirely so Vite HMR works
+  // and stale JS modules are never served from cache.
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
+
   // API calls → NetworkFirst with cache fallback
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request));
@@ -63,7 +70,7 @@ async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    if (response.ok && request.method === 'GET') cache.put(request, response.clone());
     return response;
   } catch {
     const cached = await cache.match(request);

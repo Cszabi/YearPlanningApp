@@ -1,3 +1,7 @@
-:80 {
+www.flowkigai.com {
+    redir https://flowkigai.com{uri} permanent
+}
+
+flowkigai.com {
     reverse_proxy api:8080
 }
