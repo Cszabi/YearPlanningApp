@@ -1,3 +1,5 @@
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -5,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using YearPlanningApp.Application.Common.Interfaces;
 using YearPlanningApp.Domain.Entities;
 using YearPlanningApp.Domain.Interfaces;
+using YearPlanningApp.Infrastructure.Jobs;
 using YearPlanningApp.Infrastructure.Persistence;
 using YearPlanningApp.Infrastructure.Services;
 using YearPlanningApp.Infrastructure.Settings;
@@ -26,6 +29,26 @@ public static class DependencyInjection
 
         services.Configure<SmtpSettings>(configuration.GetSection("Smtp"));
         services.AddTransient<IEmailService, SmtpEmailService>();
+
+        services.Configure<VapidSettings>(configuration.GetSection("Vapid"));
+        services.AddScoped<IPushNotificationService, PushNotificationService>();
+
+        // Hangfire with Postgres storage
+        services.AddHangfire(cfg => cfg
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(c =>
+                c.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
+        services.AddHangfireServer(options =>
+        {
+            options.WorkerCount = 2;
+            options.Queues = ["default"];
+        });
+
+        services.AddScoped<WeeklyReviewReminderJob>();
+        services.AddScoped<GoalDeadlineReminderJob>();
+        services.AddScoped<HabitStreakRiskJob>();
 
         return services;
     }

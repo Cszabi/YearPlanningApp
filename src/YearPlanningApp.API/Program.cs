@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +8,7 @@ using Serilog;
 using YearPlanningApp.API.Middleware;
 using YearPlanningApp.Application;
 using YearPlanningApp.Infrastructure;
+using YearPlanningApp.Infrastructure.Jobs;
 using YearPlanningApp.Infrastructure.Persistence;
 
 Log.Logger = new LoggerConfiguration()
@@ -118,6 +120,24 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+// Register Hangfire recurring jobs
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobs.AddOrUpdate<WeeklyReviewReminderJob>(
+        "weekly-review-reminder",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.Hourly());
+    recurringJobs.AddOrUpdate<GoalDeadlineReminderJob>(
+        "goal-deadline-reminder",
+        job => job.ExecuteAsync(CancellationToken.None),
+        "0 9 * * *"); // daily at 09:00 UTC
+    recurringJobs.AddOrUpdate<HabitStreakRiskJob>(
+        "habit-streak-risk",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.Hourly());
+}
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseSerilogRequestLogging();
 
@@ -125,6 +145,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHangfireDashboard("/hangfire");
 }
 
 if (!app.Environment.IsDevelopment())
