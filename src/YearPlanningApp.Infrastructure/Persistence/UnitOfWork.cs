@@ -18,6 +18,8 @@ public class UnitOfWork : IUnitOfWork
     public IHabitRepository Habits { get; }
     public IFlowSessionRepository FlowSessions { get; }
     public IReviewRepository Reviews { get; }
+    public IPushSubscriptionRepository PushSubscriptions { get; }
+    public INotificationPreferenceRepository NotificationPreferences { get; }
 
     public UnitOfWork(AppDbContext context)
     {
@@ -30,6 +32,8 @@ public class UnitOfWork : IUnitOfWork
         Habits = new HabitRepository(context);
         FlowSessions = new FlowSessionRepository(context);
         Reviews = new ReviewRepository(context);
+        PushSubscriptions = new PushSubscriptionRepository(context);
+        NotificationPreferences = new NotificationPreferenceRepository(context);
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)

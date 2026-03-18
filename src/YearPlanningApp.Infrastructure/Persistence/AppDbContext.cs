@@ -24,6 +24,8 @@ public class AppDbContext : DbContext
     public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
     public DbSet<FlowSession> FlowSessions => Set<FlowSession>();
     public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +48,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<HabitLog>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<FlowSession>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Review>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<PushSubscription>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<NotificationPreference>().HasQueryFilter(e => e.DeletedAt == null);
 
         // ── Enums stored as integers (default in EF Core) ─────────────────
         // No extra config needed — int storage is the default
@@ -130,6 +134,22 @@ public class AppDbContext : DbContext
             .IsUnique()
             .HasFilter("deleted_at IS NULL")
             .HasDatabaseName("idx_ikigai_journey_user_year");
+
+        // PushSubscriptions
+        modelBuilder.Entity<PushSubscription>()
+            .HasIndex(s => s.UserId)
+            .HasDatabaseName("idx_push_subscriptions_user");
+
+        modelBuilder.Entity<PushSubscription>()
+            .HasIndex(s => s.Endpoint)
+            .HasDatabaseName("idx_push_subscriptions_endpoint");
+
+        // NotificationPreferences — one per user
+        modelBuilder.Entity<NotificationPreference>()
+            .HasIndex(p => p.UserId)
+            .IsUnique()
+            .HasFilter("deleted_at IS NULL")
+            .HasDatabaseName("idx_notification_preferences_user");
 
         // ── snake_case naming convention ───────────────────────────────────
         foreach (var entity in modelBuilder.Model.GetEntityTypes())

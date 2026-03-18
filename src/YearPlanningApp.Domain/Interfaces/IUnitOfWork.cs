@@ -10,6 +10,8 @@ public interface IUnitOfWork : IDisposable
     IHabitRepository Habits { get; }
     IFlowSessionRepository FlowSessions { get; }
     IReviewRepository Reviews { get; }
+    IPushSubscriptionRepository PushSubscriptions { get; }
+    INotificationPreferenceRepository NotificationPreferences { get; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task BeginTransactionAsync(CancellationToken ct = default);
     Task CommitTransactionAsync(CancellationToken ct = default);
