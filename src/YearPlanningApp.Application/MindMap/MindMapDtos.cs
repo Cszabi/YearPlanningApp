@@ -17,7 +17,8 @@ public record MindMapNodeDto(
     double PositionY,
     Guid? LinkedGoalId,
     string? IkigaiCategory,
-    string? Icon);
+    string? Icon,
+    string? LifeArea);
 
 public static class MindMapMappings
 {
@@ -36,5 +37,6 @@ public static class MindMapMappings
         n.PositionY,
         n.LinkedGoalId,
         n.IkigaiCategory?.ToString(),
-        n.Icon);
+        n.Icon,
+        n.LifeArea?.ToString());
 }

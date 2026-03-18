@@ -15,7 +15,8 @@ public record UpdateNodeCommand(
     double? PositionX,
     double? PositionY,
     string? IkigaiCategory,
-    string? Icon)
+    string? Icon,
+    string? LifeArea)
     : ICommand<OneOf<MindMapNodeDto, NotFoundError>>, IAuthenticatedCommand;
 
 public class UpdateNodeCommandHandler
@@ -51,6 +52,10 @@ public class UpdateNodeCommandHandler
                 : Enum.TryParse<IkigaiCategory>(command.IkigaiCategory, true, out var cat) ? cat : node.IkigaiCategory;
         if (command.Icon is not null)
             node.Icon = command.Icon == "" ? null : command.Icon;
+        if (command.LifeArea is not null)
+            node.LifeArea = command.LifeArea == ""
+                ? null
+                : Enum.TryParse<LifeArea>(command.LifeArea, true, out var la) ? la : node.LifeArea;
 
         await _uow.MindMaps.UpdateNodeAsync(node, ct);
         await _uow.SaveChangesAsync(ct);

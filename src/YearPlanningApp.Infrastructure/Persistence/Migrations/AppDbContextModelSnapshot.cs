@@ -517,6 +517,10 @@ namespace YearPlanningApp.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("label");
 
+                    b.Property<int?>("LifeArea")
+                        .HasColumnType("integer")
+                        .HasColumnName("life_area");
+
                     b.Property<Guid?>("LinkedGoalId")
                         .HasColumnType("uuid")
                         .HasColumnName("linked_goal_id");
