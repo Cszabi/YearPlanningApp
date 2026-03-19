@@ -36,8 +36,7 @@ public class SendGoalEmailCommandHandler
         if (string.IsNullOrWhiteSpace(_currentUser.Email))
             return new ConflictError("No email address on record for this account.");
 
-        var progress = await _uow.Goals.CalculateGoalProgressAsync(goal.Id, ct);
-        var dto      = goal.ToDto(progress);
+        var dto = goal.ToDto();
         var html     = GoalEmailTemplate.Build(dto, _currentUser.Email);
 
         try
@@ -71,7 +70,7 @@ internal static class GoalEmailTemplate
     public static string Build(GoalDto goal, string recipientEmail)
     {
         var targetDate       = goal.TargetDate.HasValue ? goal.TargetDate.Value.ToString("MMMM d, yyyy") : "—";
-        var progressBar      = ProgressBar((int)Math.Round(goal.Progress));
+        var progressBar      = ProgressBar(goal.ProgressPercent);
         var smartSection     = SmartSection(goal.SmartGoal);
         var woopSection      = WoopSection(goal.WoopReflection);
         var milestoneSection = MilestoneSection(goal.Milestones);
@@ -134,7 +133,7 @@ internal static class GoalEmailTemplate
                 <tr>
                   <td style="padding:24px 40px;">
                     <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#5A6A6A;text-transform:uppercase;letter-spacing:1px;">
-                      Progress — {(int)Math.Round(goal.Progress)}%
+                      Progress — {goal.ProgressPercent}%
                     </p>
                     {progressBar}
                   </td>

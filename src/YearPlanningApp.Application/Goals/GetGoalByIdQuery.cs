@@ -29,7 +29,6 @@ public class GetGoalByIdQueryHandler
         if (goal is null)
             return new NotFoundError("Goal", query.GoalId);
 
-        var progress = await _uow.Goals.CalculateGoalProgressAsync(goal.Id, ct);
-        return goal.ToDto(progress);
+        return goal.ToDto();
     }
 }

@@ -15,7 +15,8 @@ public record GoalDto(
     string? WhyItMatters,
     DateTime? TargetDate,
     string[] AlignedValueNames,
-    double Progress,
+    int ProgressPercent,
+    DateTime? CompletedAt,
     SmartGoalDto? SmartGoal,
     WoopReflectionDto? WoopReflection,
     IReadOnlyList<MilestoneDto> Milestones);
@@ -59,6 +60,12 @@ public record TaskDto(
     bool IsNextAction);
 
 // ── Habit ─────────────────────────────────────────────────────────────────────
+public record HabitLogDto(
+    Guid Id,
+    DateTime LoggedDate,
+    string? Notes,
+    int? DurationMinutes);
+
 public record HabitDto(
     Guid Id,
     Guid GoalId,
@@ -70,7 +77,15 @@ public record HabitDto(
     string? Trigger,
     string? CelebrationRitual,
     int CurrentStreak,
-    int LongestStreak);
+    int LongestStreak,
+    IReadOnlyList<HabitLogDto> RecentLogs);
+
+// ── GoalProgressSnapshot ──────────────────────────────────────────────────────
+public record GoalProgressSnapshotDto(
+    Guid Id,
+    Guid GoalId,
+    int ProgressPercent,
+    DateOnly SnapshotDate);
 
 // ── Mappings ──────────────────────────────────────────────────────────────────
 public static class GoalMappings
@@ -81,15 +96,19 @@ public static class GoalMappings
         catch { return []; }
     }
 
-    public static GoalDto ToDto(this Goal g, double progress = 0) => new(
+    public static GoalDto ToDto(this Goal g) => new(
         g.Id, g.Year, g.Title,
         g.GoalType.ToString(), g.Status.ToString(), g.LifeArea.ToString(), g.EnergyLevel.ToString(),
         g.WhyItMatters, g.TargetDate,
         ParseValues(g.AlignedValueNames),
-        progress,
+        g.ProgressPercent,
+        g.CompletedAt,
         g.SmartGoal?.ToDto(),
         g.WoopReflection?.ToDto(),
         (g.Milestones ?? []).Select(m => m.ToDto()).ToList().AsReadOnly());
+
+    public static GoalProgressSnapshotDto ToDto(this GoalProgressSnapshot s) => new(
+        s.Id, s.GoalId, s.ProgressPercent, s.SnapshotDate);
 
     public static SmartGoalDto ToDto(this SmartGoal s) => new(
         s.Id, s.Specific, s.Measurable, s.Achievable, s.Relevant, s.TimeBound);
@@ -106,9 +125,19 @@ public static class GoalMappings
         t.Status.ToString(), t.EnergyLevel.ToString(),
         t.EstimatedMinutes, t.DueDate, t.IsNextAction);
 
-    public static HabitDto ToDto(this Habit h) => new(
-        h.Id, h.GoalId, h.Title,
-        h.Frequency.ToString(), h.TrackingMethod.ToString(),
-        h.MinimumViableDose, h.IdealDose, h.Trigger, h.CelebrationRitual,
-        h.CurrentStreak, h.LongestStreak);
+    public static HabitDto ToDto(this Habit h)
+    {
+        var cutoff = DateTime.UtcNow.AddDays(-30);
+        var recentLogs = (h.Logs ?? [])
+            .Where(l => l.LoggedDate >= cutoff)
+            .OrderBy(l => l.LoggedDate)
+            .Select(l => new HabitLogDto(l.Id, l.LoggedDate, l.Notes, l.DurationMinutes))
+            .ToList()
+            .AsReadOnly();
+        return new(
+            h.Id, h.GoalId, h.Title,
+            h.Frequency.ToString(), h.TrackingMethod.ToString(),
+            h.MinimumViableDose, h.IdealDose, h.Trigger, h.CelebrationRitual,
+            h.CurrentStreak, h.LongestStreak, recentLogs);
+    }
 }
