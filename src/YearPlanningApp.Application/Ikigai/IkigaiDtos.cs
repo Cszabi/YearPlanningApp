@@ -8,6 +8,7 @@ public record IkigaiJourneyDto(
     int Year,
     string Status,
     DateTime? CompletedAt,
+    bool HasSeededMindMap,
     List<IkigaiRoomDto> Rooms,
     NorthStarDto? NorthStar,
     List<UserValueDto> Values);
@@ -35,6 +36,7 @@ public static class IkigaiMappings
         j.Year,
         j.Status.ToString(),
         j.CompletedAt,
+        j.HasSeededMindMap,
         j.Rooms.Select(r => r.ToDto()).ToList(),
         j.NorthStar?.ToDto(),
         j.Values.OrderBy(v => v.Rank).Select(v => v.ToDto()).ToList());

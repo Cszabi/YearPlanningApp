@@ -10,7 +10,10 @@ public class IkigaiJourney : BaseEntity
     public int Year { get; set; }
     public IkigaiJourneyStatus Status { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public bool HasSeededMindMap { get; private set; }
     public ICollection<IkigaiRoom> Rooms { get; set; } = new List<IkigaiRoom>();
     public NorthStar? NorthStar { get; set; }
     public ICollection<UserValue> Values { get; set; } = new List<UserValue>();
+
+    public void SetHasSeededMindMap(bool value) => HasSeededMindMap = value;
 }
