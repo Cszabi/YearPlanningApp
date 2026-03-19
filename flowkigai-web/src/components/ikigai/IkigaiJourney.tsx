@@ -7,6 +7,8 @@ import { ROOMS, ROOM_TYPE_TO_INDEX } from "./roomData";
 import IkigaiRoom from "./IkigaiRoom";
 import IkigaiSynthesis from "./IkigaiSynthesis";
 import ValuesSelector from "./ValuesSelector";
+import PdfActionButtons from "@/components/pdf/PdfActionButtons";
+import IkigaiCanvasPdf from "@/components/pdf/IkigaiCanvasPdf";
 
 const YEAR = new Date().getFullYear();
 const DRAFT_KEY = `flowkigai-ikigai-draft-${YEAR}`;
@@ -327,7 +329,15 @@ export default function IkigaiJourney() {
         >
           Your map is ready.
         </p>
-        <p className="text-sm" style={{ color: "var(--text-faint)" }}>Let's see what emerged.</p>
+        <p className="text-sm mb-8" style={{ color: "var(--text-faint)" }}>Let's see what emerged.</p>
+        {journey && (
+          <PdfActionButtons
+            document={<IkigaiCanvasPdf journey={journey} year={YEAR} />}
+            filename={`Ikigai_Canvas_${YEAR}`}
+            subject={`Ikigai Canvas ${YEAR}`}
+            size="medium"
+          />
+        )}
       </div>
     );
   }

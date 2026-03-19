@@ -11,6 +11,8 @@ import GoalCard from "@/components/goals/GoalCard";
 import HabitCard from "@/components/goals/HabitCard";
 import GoalCreationWizard from "@/components/goals/GoalCreationWizard";
 import HabitCreationWizard from "@/components/goals/HabitCreationWizard";
+import PdfActionButtons from "@/components/pdf/PdfActionButtons";
+import GoalsSummaryPdf from "@/components/pdf/GoalsSummaryPdf";
 
 const YEAR = new Date().getFullYear();
 
@@ -96,10 +98,17 @@ export default function GoalsPage() {
               {activeGoals.length} active · {habits.length} habits
             </Typography>
           </Box>
-          <Button variant="contained" startIcon={<AddIcon />}
-            onClick={onAddClick} sx={{ borderRadius: 6 }}>
-            {tab === 1 ? "New Habit" : "New Goal"}
-          </Button>
+          <Stack direction="row" gap={1} alignItems="center">
+            <PdfActionButtons
+              document={<GoalsSummaryPdf goals={allGoals} habits={habits} year={YEAR} />}
+              filename={`Goals_Summary_${YEAR}`}
+              subject={`Goals Summary ${YEAR}`}
+            />
+            <Button variant="contained" startIcon={<AddIcon />}
+              onClick={onAddClick} sx={{ borderRadius: 6 }}>
+              {tab === 1 ? "New Habit" : "New Goal"}
+            </Button>
+          </Stack>
         </Stack>
 
         {/* Tabs */}

@@ -25,9 +25,27 @@ public sealed class SmtpEmailService : IEmailService
         message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
         message.To.Add(new MailboxAddress(toName, toEmail));
         message.Subject = subject;
-
         message.Body = new TextPart("html") { Text = htmlBody };
+        await SendMessageAsync(message, toEmail, ct);
+    }
 
+    public async Task SendWithAttachmentAsync(string toEmail, string toName, string subject, string htmlBody, byte[] attachment, string attachmentFileName, CancellationToken ct = default)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
+        message.To.Add(new MailboxAddress(toName, toEmail));
+        message.Subject = subject;
+
+        var builder = new BodyBuilder { HtmlBody = htmlBody };
+        var mimeType = MimeKit.MimeTypes.GetMimeType(attachmentFileName);
+        builder.Attachments.Add(attachmentFileName, attachment, ContentType.Parse(mimeType));
+        message.Body = builder.ToMessageBody();
+
+        await SendMessageAsync(message, toEmail, ct);
+    }
+
+    private async Task SendMessageAsync(MimeMessage message, string toEmail, CancellationToken ct)
+    {
         using var client = new SmtpClient();
         try
         {
@@ -40,7 +58,7 @@ public sealed class SmtpEmailService : IEmailService
             await client.SendAsync(message, ct);
             await client.DisconnectAsync(true, ct);
 
-            _logger.LogInformation("Email sent to {Email} — subject: {Subject}", toEmail, subject);
+            _logger.LogInformation("Email sent to {Email} — subject: {Subject}", toEmail, message.Subject);
         }
         catch (Exception ex)
         {

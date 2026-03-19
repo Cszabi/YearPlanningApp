@@ -13,6 +13,8 @@ import { goalApi, type GoalDto } from "@/api/goalApi";
 import { habitApi } from "@/api/habitApi";
 import { flowSessionApi, type FlowInsightsDto } from "@/api/flowSessionApi";
 import { useFlowTimerStore } from "@/stores/flowTimerStore";
+import PdfActionButtons from "@/components/pdf/PdfActionButtons";
+import FlowHistoryPdf from "@/components/pdf/FlowHistoryPdf";
 
 const YEAR = new Date().getFullYear();
 
@@ -213,6 +215,12 @@ function FlowInsightsWidget() {
     retry: 1,
   });
 
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["flow-sessions", YEAR],
+    queryFn: () => flowSessionApi.getSessions(YEAR),
+    retry: 1,
+  });
+
   if (isLoading) return <WidgetSkeleton />;
 
   const hours = insights
@@ -226,15 +234,24 @@ function FlowInsightsWidget() {
           <BoltIcon fontSize="small" color="primary" />
           <Typography variant="subtitle2" fontWeight={700}>Flow This Week</Typography>
         </Stack>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<PlayArrowIcon />}
-          onClick={() => { startSetup(); navigate("/flow"); }}
-          sx={{ borderRadius: 4 }}
-        >
-          Start session
-        </Button>
+        <Stack direction="row" gap={1} alignItems="center">
+          {sessions.length > 0 && (
+            <PdfActionButtons
+              document={<FlowHistoryPdf sessions={sessions} year={YEAR} />}
+              filename={`Flow_History_${YEAR}`}
+              subject={`Flow Session History ${YEAR}`}
+            />
+          )}
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<PlayArrowIcon />}
+            onClick={() => { startSetup(); navigate("/flow"); }}
+            sx={{ borderRadius: 4 }}
+          >
+            Start session
+          </Button>
+        </Stack>
       </Stack>
 
       {isError || !insights ? (

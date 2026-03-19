@@ -69,4 +69,9 @@ export const flowSessionApi = {
     const { data } = await api.get("/flow-sessions/insights");
     return data.data as FlowInsightsDto;
   },
+
+  getSessions: async (year: number): Promise<FlowSessionDto[]> => {
+    const { data } = await api.get(`/flow-sessions?year=${year}`);
+    return data.data as FlowSessionDto[];
+  },
 };

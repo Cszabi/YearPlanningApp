@@ -7,7 +7,10 @@ import AddIcon from "@mui/icons-material/Add";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditIcon from "@mui/icons-material/Edit";
 import { reviewApi, type ReviewDto } from "@/api/reviewApi";
+import { goalApi } from "@/api/goalApi";
 import WeeklyReview from "@/components/reviews/WeeklyReview";
+import PdfActionButtons from "@/components/pdf/PdfActionButtons";
+import WeeklyReviewPdf from "@/components/pdf/WeeklyReviewPdf";
 
 const YEAR = new Date().getFullYear();
 const ENERGY_LABELS = ["", "Drained", "Low", "Neutral", "Good", "Energised"];
@@ -28,10 +31,11 @@ function formatWeekRange(periodStart: string): string {
   return `${start.toLocaleDateString(undefined, opts)} – ${end.toLocaleDateString(undefined, opts)}`;
 }
 
-function ReviewCard({ review, onEdit }: { review: ReviewDto; onEdit: () => void }) {
+function ReviewCard({ review, onEdit, goalList }: { review: ReviewDto; onEdit: () => void; goalList: Array<{ id: string; title: string }> }) {
+  const weekLabel = `Weekly Review — ${formatWeekRange(review.periodStart)}`;
   return (
     <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, "&:hover": { bgcolor: "action.hover" } }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
+      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
         <Box>
           <Typography variant="body2" fontWeight={600}>
             Week of {formatWeekRange(review.periodStart)}
@@ -49,14 +53,23 @@ function ReviewCard({ review, onEdit }: { review: ReviewDto; onEdit: () => void 
             )}
           </Stack>
         </Box>
-        <Button
-          size="small"
-          startIcon={review.isComplete ? undefined : <EditIcon />}
-          onClick={onEdit}
-          variant={review.isComplete ? "text" : "outlined"}
-        >
-          {review.isComplete ? "View" : "Continue"}
-        </Button>
+        <Stack direction="row" gap={1} alignItems="center">
+          {review.isComplete && (
+            <PdfActionButtons
+              document={<WeeklyReviewPdf review={review} goals={goalList} />}
+              filename={`Weekly_Review_${review.periodStart}`}
+              subject={weekLabel}
+            />
+          )}
+          <Button
+            size="small"
+            startIcon={review.isComplete ? undefined : <EditIcon />}
+            onClick={onEdit}
+            variant={review.isComplete ? "text" : "outlined"}
+          >
+            {review.isComplete ? "View" : "Continue"}
+          </Button>
+        </Stack>
       </Stack>
     </Paper>
   );
@@ -71,6 +84,14 @@ export default function ReviewsPage() {
     enabled: !activeWeek,
     retry: 1,
   });
+
+  const { data: allGoals = [] } = useQuery({
+    queryKey: ["goals", YEAR],
+    queryFn: () => goalApi.getGoals(YEAR),
+    enabled: !activeWeek,
+    retry: 1,
+  });
+  const goalList = allGoals.map((g) => ({ id: g.id, title: g.title }));
 
   const thisWeek = getMonday();
 
@@ -153,6 +174,7 @@ export default function ReviewsPage() {
                 <ReviewCard
                   key={r.id}
                   review={r}
+                  goalList={goalList}
                   onEdit={() => setActiveWeek(r.periodStart.slice(0, 10))}
                 />
               ))}
