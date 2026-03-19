@@ -1,10 +1,12 @@
 import api from "./client";
+import type { IkigaiExtractionResult } from "@/stores/ikigaiStore";
 
 export interface IkigaiJourneyDto {
   id: string;
   year: number;
   status: string; // "Draft" | "Complete"
   completedAt: string | null;
+  hasSeededMindMap: boolean;
   rooms: IkigaiRoomDto[];
   northStar: NorthStarDto | null;
   values: UserValueDto[];
@@ -64,5 +66,18 @@ export const ikigaiApi = {
   ): Promise<UserValueDto[]> => {
     const { data } = await api.put(`/ikigai/${year}/values`, { values });
     return data.data as UserValueDto[];
+  },
+
+  extractThemes: async (year: number): Promise<IkigaiExtractionResult> => {
+    const { data } = await api.post(`/ikigai/extract-themes`, { year });
+    return data.data as IkigaiExtractionResult;
+  },
+
+  seedMindMap: async (
+    year: number,
+    themes: IkigaiExtractionResult,
+    mode: "Merge" | "Replace"
+  ): Promise<void> => {
+    await api.post(`/mind-maps/seed-from-ikigai`, { year, themes, mode });
   },
 };
