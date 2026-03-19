@@ -20,6 +20,7 @@ import TasksPage from "@/pages/TasksPage";
 import ReviewsPage from "@/pages/ReviewsPage";
 import DashboardPage from "@/pages/DashboardPage";
 import AdminPage from "@/pages/AdminPage";
+import AnalyticsDashboardPage from "@/pages/AnalyticsDashboardPage";
 import NotificationSettingsPage from "@/pages/NotificationSettingsPage";
 
 const queryClient = new QueryClient({
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/admin" element={<AdminGuard><AdminPage /></AdminGuard>} />
+            <Route path="/admin/analytics" element={<AdminGuard><AnalyticsDashboardPage /></AdminGuard>} />
             <Route path="/settings" element={<NotificationSettingsPage />} />
           </Route>
         </Routes>
