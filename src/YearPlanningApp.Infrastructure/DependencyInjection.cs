@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using YearPlanningApp.Application.Common.Interfaces;
+using YearPlanningApp.Application.Ikigai;
 using YearPlanningApp.Domain.Entities;
 using YearPlanningApp.Domain.Interfaces;
 using YearPlanningApp.Infrastructure.Jobs;
@@ -35,6 +36,14 @@ public static class DependencyInjection
 
         services.Configure<VapidSettings>(configuration.GetSection("Vapid"));
         services.AddScoped<IPushNotificationService, PushNotificationService>();
+
+        services.Configure<AnthropicSettings>(configuration.GetSection("Anthropic"));
+        services.AddHttpClient("anthropic", c =>
+        {
+            c.BaseAddress = new Uri("https://api.anthropic.com");
+            c.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+        });
+        services.AddScoped<IIkigaiThemeExtractionService, IkigaiThemeExtractionService>();
 
         // Hangfire with Postgres storage
         services.AddHangfire(cfg => cfg
