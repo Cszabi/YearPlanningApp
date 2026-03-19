@@ -82,9 +82,13 @@ export default function IkigaiJourney() {
 
     if (!journey) return;
 
-    // Fully complete — go to map
+    // Fully complete — go to complete page (or map if already seeded)
     if (journey.northStar !== null && journey.values.length >= 5) {
-      navigate("/map");
+      if (journey.hasSeededMindMap) {
+        navigate("/map");
+      } else {
+        navigate("/ikigai/complete");
+      }
       return;
     }
 
@@ -209,7 +213,7 @@ export default function IkigaiJourney() {
       setSavingValues(false);
     }
     setPhase("journey-complete");
-    setTimeout(() => navigate("/map"), 2500);
+    setTimeout(() => navigate("/ikigai/complete", { replace: true }), 2500);
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────

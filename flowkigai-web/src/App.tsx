@@ -11,6 +11,8 @@ import RegisterPage from "@/pages/RegisterPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import IkigaiPage from "@/pages/IkigaiPage";
+import IkigaiCompletePage from "@/pages/IkigaiCompletePage";
+import IkigaiSeedPage from "@/pages/IkigaiSeedPage";
 import MindMapPage from "@/pages/MindMapPage";
 import GoalsPage from "@/pages/GoalsPage";
 import GoalDetailPage from "@/pages/GoalDetailPage";
@@ -54,6 +56,8 @@ export default function App() {
           {/* Protected routes — TabNav redirects to / if not authenticated */}
           <Route element={<TabNav />}>
             <Route path="/ikigai" element={<IkigaiPage />} />
+            <Route path="/ikigai/complete" element={<IkigaiCompletePage />} />
+            <Route path="/ikigai/seed" element={<IkigaiSeedPage />} />
             <Route path="/map" element={<MindMapPage />} />
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/goals/:goalId" element={<GoalDetailPage />} />
