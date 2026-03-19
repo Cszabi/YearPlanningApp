@@ -49,10 +49,18 @@ export interface GoalDto {
   whyItMatters: string | null;
   targetDate: string | null;
   alignedValueNames: string[];
-  progress: number;
+  progressPercent: number;
+  completedAt: string | null;
   smartGoal: SmartGoalDto | null;
   woopReflection: WoopReflectionDto | null;
   milestones: MilestoneDto[];
+}
+
+export interface GoalProgressSnapshotDto {
+  id: string;
+  goalId: string;
+  progressPercent: number;
+  snapshotDate: string;
 }
 
 export const goalApi = {
@@ -184,5 +192,15 @@ export const goalApi = {
 
   sendEmail: async (goalId: string, year: number): Promise<void> => {
     await api.post(`/goals/${goalId}/email?year=${year}`);
+  },
+
+  updateProgress: async (goalId: string, progressPercent: number): Promise<GoalDto> => {
+    const { data } = await api.patch(`/goals/${goalId}/progress`, { progressPercent });
+    return data.data as GoalDto;
+  },
+
+  getProgressHistory: async (goalId: string): Promise<GoalProgressSnapshotDto[]> => {
+    const { data } = await api.get(`/goals/${goalId}/progress/history`);
+    return data.data as GoalProgressSnapshotDto[];
   },
 };
