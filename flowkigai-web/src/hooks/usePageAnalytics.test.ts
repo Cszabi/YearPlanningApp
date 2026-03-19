@@ -174,7 +174,7 @@ describe("usePageAnalytics", () => {
   });
 
   it("fetch is NOT called on beforeunload — sendBeacon is used", async () => {
-    const fetchSpy = vi.spyOn(global, "fetch");
+    const fetchSpy = vi.spyOn(window, "fetch");
     const { unmount } = renderHook(() => usePageAnalytics("/goals"));
     await waitFor(() => expect(mockStartSession).toHaveBeenCalled());
 

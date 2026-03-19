@@ -25,7 +25,7 @@ import TabNav from "@/components/layout/TabNav";
 const muiTheme = createTheme();
 
 function mockUser(role: "User" | "Admin") {
-  (useAuthStore as ReturnType<typeof vi.fn>).mockImplementation(
+  (useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: { user: unknown; logout: ReturnType<typeof vi.fn> }) => unknown) =>
       selector({
         user: {

@@ -12,7 +12,7 @@ import AdminGuard from "@/components/layout/AdminGuard";
 type MockUser = { id: string; email: string; displayName: string; role: string; plan: string } | null;
 
 function mockStoreUser(user: MockUser) {
-  (useAuthStore as ReturnType<typeof vi.fn>).mockImplementation(
+  (useAuthStore as unknown as ReturnType<typeof vi.fn>).mockImplementation(
     (selector: (s: { user: MockUser }) => unknown) => selector({ user })
   );
 }

@@ -10,7 +10,7 @@ vi.mock("@/api/analyticsApi", () => ({
 }));
 
 // recharts uses ResizeObserver — stub it for jsdom
-global.ResizeObserver = class {
+window.ResizeObserver = class {
   observe() {}
   unobserve() {}
   disconnect() {}

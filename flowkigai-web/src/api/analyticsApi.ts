@@ -1,4 +1,4 @@
-import { client } from "./client";
+import api from "./client";
 
 export interface PageSessionDto {
   id: string;
@@ -47,7 +47,7 @@ export interface PageAnalyticsDto {
 
 export const analyticsApi = {
   startSession: async (page: string, deviceType: string): Promise<PageSessionDto> => {
-    const res = await client.post<{ data: PageSessionDto }>(
+    const res = await api.post<{ data: PageSessionDto }>(
       "/api/v1/analytics/page-session/start",
       { page, deviceType }
     );
@@ -55,7 +55,7 @@ export const analyticsApi = {
   },
 
   endSession: async (sessionId: string, exitType: string): Promise<void> => {
-    await client.post("/api/v1/analytics/page-session/end", { sessionId, exitType });
+    await api.post("/api/v1/analytics/page-session/end", { sessionId, exitType });
   },
 
   logAction: async (params: {
@@ -65,7 +65,7 @@ export const analyticsApi = {
     actionLabel?: string;
     metadata?: string;
   }): Promise<void> => {
-    await client.post("/api/v1/analytics/action", params);
+    await api.post("/api/v1/analytics/action", params);
   },
 
   getPageAnalytics: async (
@@ -73,7 +73,7 @@ export const analyticsApi = {
     fromDate: string,
     toDate: string
   ): Promise<PageAnalyticsDto> => {
-    const res = await client.get<{ data: PageAnalyticsDto }>(
+    const res = await api.get<{ data: PageAnalyticsDto }>(
       `/api/v1/analytics/pages/${encodeURIComponent(page)}`,
       { params: { fromDate, toDate } }
     );
@@ -85,7 +85,7 @@ export const analyticsApi = {
     fromDate: string,
     toDate: string
   ): Promise<PageSessionDto[]> => {
-    const res = await client.get<{ data: PageSessionDto[] }>(
+    const res = await api.get<{ data: PageSessionDto[] }>(
       `/api/v1/analytics/users/${userId}/journey`,
       { params: { fromDate, toDate } }
     );
