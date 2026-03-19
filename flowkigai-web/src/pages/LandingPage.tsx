@@ -122,53 +122,33 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "64px 24px 48px" }}>
-        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
-
-          {/* Left column — hero image */}
-          <div style={{ flex: "1 1 0", minWidth: 0 }}>
-            <img
-              src="/images/ikigaiToMindMap.png"
-              alt="Ikigai compass transforming into a mind map"
-              style={{
-                width: "100%",
-                objectFit: "cover",
-                maxHeight: "600px",
-                borderRadius: 16,
-              }}
-              className="max-h-[280px] md:max-h-[600px]"
-            />
+      <section className="text-center px-6 py-20">
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+          <div className="flex justify-center mb-4" style={{ color: C.text }}>
+            <FlowkigaiLogo size="lg" showWordmark={true} />
           </div>
+          <p className="text-lg mb-8" style={{ color: C.muted, lineHeight: 1.75 }}>
+            A year planning system that starts with meaning and ends with momentum.
+            Built on Ikigai, Deep Work, and the science of flow.
+          </p>
 
-          {/* Right column — copy + CTAs */}
-          <div style={{ flex: "1 1 0", minWidth: 0 }}>
-            <div className="mb-6" style={{ color: C.text }}>
-              <FlowkigaiLogo size="lg" showWordmark={true} />
-            </div>
-            <p className="text-lg mb-8" style={{ color: C.muted, lineHeight: 1.75 }}>
-              A year planning system that starts with meaning and ends with momentum.
-              Built on Ikigai, Deep Work, and the science of flow.
-            </p>
-
-            {/* CTA buttons — row on desktop, stacked on mobile */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                to="/register"
-                className="w-full sm:w-auto px-8 py-3 rounded-full text-white text-sm font-semibold text-center transition-opacity hover:opacity-90"
-                style={{ backgroundColor: C.accent }}
-              >
-                Get Started
-              </Link>
-              <Link
-                to="/login"
-                className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold text-center border-2 transition-colors hover:bg-[#0D9E9E22]"
-                style={{ color: C.accent, borderColor: C.accent }}
-              >
-                Sign In
-              </Link>
-            </div>
+          {/* CTA buttons — row on desktop, stacked on mobile */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/register"
+              className="w-full sm:w-auto px-8 py-3 rounded-full text-white text-sm font-semibold text-center transition-opacity hover:opacity-90"
+              style={{ backgroundColor: C.accent }}
+            >
+              Get Started
+            </Link>
+            <Link
+              to="/login"
+              className="w-full sm:w-auto px-8 py-3 rounded-full text-sm font-semibold text-center border-2 transition-colors hover:bg-[#0D9E9E22]"
+              style={{ color: C.accent, borderColor: C.accent }}
+            >
+              Sign In
+            </Link>
           </div>
-
         </div>
       </section>
 

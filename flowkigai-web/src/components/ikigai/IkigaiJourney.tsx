@@ -320,24 +320,37 @@ export default function IkigaiJourney() {
   if (phase === "journey-complete") {
     return (
       <div
-        className="h-full flex flex-col items-center justify-center px-6 text-center"
-        style={{ backgroundColor: "var(--bg-app)" }}
+        className="h-full flex flex-col md:flex-row items-center"
+        style={{ backgroundColor: "var(--bg-app)", overflow: "auto" }}
       >
-        <p
-          className="text-2xl font-light mb-4"
-          style={{ fontFamily: "Georgia, serif", color: "var(--text-secondary)" }}
-        >
-          Your map is ready.
-        </p>
-        <p className="text-sm mb-8" style={{ color: "var(--text-faint)" }}>Let's see what emerged.</p>
-        {journey && (
-          <PdfActionButtons
-            document={<IkigaiCanvasPdf journey={journey} year={YEAR} />}
-            filename={`Ikigai_Canvas_${YEAR}`}
-            subject={`Ikigai Canvas ${YEAR}`}
-            size="medium"
+        {/* Left column — illustration */}
+        <div className="w-full md:w-1/2 flex-shrink-0">
+          <img
+            src="/images/ikigai-to-mindmap.png"
+            alt="Ikigai compass transforming into a mind map"
+            className="max-h-[280px] md:max-h-[600px]"
+            style={{ width: "100%", objectFit: "cover" }}
           />
-        )}
+        </div>
+
+        {/* Right column — copy + action */}
+        <div className="flex flex-col items-center justify-center px-8 py-12 text-center md:w-1/2">
+          <p
+            className="text-2xl font-light mb-4"
+            style={{ fontFamily: "Georgia, serif", color: "var(--text-secondary)" }}
+          >
+            Your map is ready.
+          </p>
+          <p className="text-sm mb-8" style={{ color: "var(--text-faint)" }}>Let's see what emerged.</p>
+          {journey && (
+            <PdfActionButtons
+              document={<IkigaiCanvasPdf journey={journey} year={YEAR} />}
+              filename={`Ikigai_Canvas_${YEAR}`}
+              subject={`Ikigai Canvas ${YEAR}`}
+              size="medium"
+            />
+          )}
+        </div>
       </div>
     );
   }
