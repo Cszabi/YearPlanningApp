@@ -40,4 +40,31 @@ public class FlowSessionsController : ControllerBase
         var sessions = await _mediator.Send(new GetFlowSessionsQuery(year), ct);
         return Ok(Envelope.Success(sessions));
     }
+
+    // POST /api/v1/flow-sessions
+    [HttpPost]
+    public async Task<IActionResult> CreateSession([FromBody] CreateFlowSessionRequest body, CancellationToken ct)
+    {
+        var command = new CreateFlowSessionCommand(
+            body.GoalId,
+            body.TaskItemId,
+            body.SessionIntention,
+            body.PlannedMinutes,
+            body.EnergyLevel,
+            body.AmbientSound);
+
+        var result = await _mediator.Send(command, ct);
+        return result.Match(
+            session => CreatedAtAction(nameof(GetActive), Envelope.Success(session)),
+            error => (IActionResult)BadRequest(Envelope.ValidationError(error)));
+    }
 }
+
+// ── Request models ────────────────────────────────────────────────────────────
+public record CreateFlowSessionRequest(
+    Guid? GoalId,
+    Guid? TaskItemId,
+    string? SessionIntention,
+    int PlannedMinutes,
+    string EnergyLevel,
+    string AmbientSound);
