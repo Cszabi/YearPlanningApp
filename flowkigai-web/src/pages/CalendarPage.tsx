@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box, Typography, IconButton, Chip, CircularProgress,
@@ -253,6 +254,7 @@ function downloadIcs(events: CalEvent[]) {
 // ── Main calendar page ────────────────────────────────────────────────────────
 
 export default function CalendarPage() {
+  usePageAnalytics("/calendar");
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selected, setSelected] = useState<string | null>(null);
 

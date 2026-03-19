@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Typography, Paper, Stack, Switch, FormControlLabel,
@@ -21,6 +22,7 @@ function parseDaysList(json: string): number[] {
 }
 
 export default function NotificationSettingsPage() {
+  const { logAction } = usePageAnalytics("/settings");
   const qc = useQueryClient();
   const { isPushSupported, isPushEnabled, isSubscribing, subscribeError, subscribeToPush, unsubscribeFromPush } =
     usePushNotifications();
@@ -104,9 +106,10 @@ export default function NotificationSettingsPage() {
             <Switch
               checked={isPushEnabled}
               disabled={isSubscribing}
-              onChange={() =>
-                isPushEnabled ? unsubscribeFromPush() : subscribeToPush()
-              }
+              onChange={() => {
+                if (isPushEnabled) { unsubscribeFromPush(); logAction("push_disabled"); }
+                else               { subscribeToPush();    logAction("push_enabled"); }
+              }}
             />
           )}
         </Stack>

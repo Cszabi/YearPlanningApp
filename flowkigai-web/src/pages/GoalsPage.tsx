@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box, Button, Chip, Typography, Stack, CircularProgress,
@@ -36,6 +37,7 @@ const ENERGY_OPTIONS = [
 ];
 
 export default function GoalsPage() {
+  const { logAction } = usePageAnalytics("/goals");
   const [tab, setTab]           = useState(0);
   const [showWizard, setShowWizard] = useState(false);
   const [showHabitWizard, setShowHabitWizard] = useState(false);
@@ -79,7 +81,10 @@ export default function GoalsPage() {
     refetchHabits();
   }
 
-  const onAddClick = () => tab === 1 ? setShowHabitWizard(true) : setShowWizard(true);
+  const onAddClick = () => {
+    if (tab === 1) { setShowHabitWizard(true); logAction("habit_wizard_opened"); }
+    else           { setShowWizard(true);       logAction("goal_wizard_opened"); }
+  };
 
   return (
     <Box sx={{ height: "100%", overflow: "auto", bgcolor: "background.default" }}>

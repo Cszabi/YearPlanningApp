@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -59,6 +60,7 @@ function isOverdue(dueDate: string | null): boolean {
 }
 
 export default function TasksPage() {
+  const { logAction } = usePageAnalytics("/tasks");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const startSetup = useFlowTimerStore((s) => s.startSetup);
@@ -108,6 +110,7 @@ export default function TasksPage() {
     setStatusOverrides((p) => ({ ...p, [task.id]: next }));
     try {
       await goalApi.updateTaskStatus(task.id, next);
+      if (next === "Done") logAction("task_completed");
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
     } catch {
       setStatusOverrides((p) => ({ ...p, [task.id]: cur }));
@@ -127,6 +130,7 @@ export default function TasksPage() {
   }
 
   function startFlow(_task: FlatTask) {
+    logAction("flow_started");
     startSetup();
     navigate("/flow");
   }

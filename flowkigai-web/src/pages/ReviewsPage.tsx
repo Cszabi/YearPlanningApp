@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box, Typography, Stack, Button, Paper, Chip, CircularProgress, Alert,
@@ -76,6 +77,7 @@ function ReviewCard({ review, onEdit, goalList }: { review: ReviewDto; onEdit: (
 }
 
 export default function ReviewsPage() {
+  const { logAction } = usePageAnalytics("/reviews");
   const [activeWeek, setActiveWeek] = useState<string | null>(null);
 
   const { data: reviews = [], isLoading, isError, refetch } = useQuery<ReviewDto[]>({
@@ -94,6 +96,8 @@ export default function ReviewsPage() {
   const goalList = allGoals.map((g) => ({ id: g.id, title: g.title }));
 
   const thisWeek = getMonday();
+
+  const openReview = (week: string) => { setActiveWeek(week); logAction("review_opened"); };
 
   if (activeWeek) {
     return <WeeklyReview weekStartDate={activeWeek} onBack={() => setActiveWeek(null)} />;
@@ -120,7 +124,7 @@ export default function ReviewsPage() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setActiveWeek(thisWeek)}
+            onClick={() => openReview(thisWeek)}
             sx={{ borderRadius: 6 }}
           >
             {thisWeekReview ? "Continue this week" : "Start this week's review"}
@@ -158,7 +162,7 @@ export default function ReviewsPage() {
             <Button
               variant="contained"
               size="large"
-              onClick={() => setActiveWeek(thisWeek)}
+              onClick={() => openReview(thisWeek)}
               sx={{ borderRadius: 6 }}
             >
               Start your first review →
@@ -175,7 +179,7 @@ export default function ReviewsPage() {
                   key={r.id}
                   review={r}
                   goalList={goalList}
-                  onEdit={() => setActiveWeek(r.periodStart.slice(0, 10))}
+                  onEdit={() => openReview(r.periodStart.slice(0, 10))}
                 />
               ))}
           </Stack>

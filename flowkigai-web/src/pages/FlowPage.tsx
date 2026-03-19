@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Box, Typography, Button, CircularProgress, Alert } from "@mui/material";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useFlowTimerStore } from "@/stores/flowTimerStore";
 import { flowSessionApi } from "@/api/flowSessionApi";
 import PreSessionSetup from "@/components/flow/PreSessionSetup";
@@ -9,6 +10,7 @@ import SessionComplete from "@/components/flow/SessionComplete";
 import { useState } from "react";
 
 export default function FlowPage() {
+  usePageAnalytics("/flow");
   const { phase, startSetup, restoreRunning } = useFlowTimerStore();
   const [checking, setChecking] = useState(true);
   const [checkError, setCheckError] = useState(false);

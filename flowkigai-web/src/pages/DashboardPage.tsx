@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useNavigate } from "react-router-dom";
 import {
   Box, Typography, Stack, Paper, LinearProgress,
@@ -303,6 +304,7 @@ function FlowInsightsWidget() {
 // ── Dashboard Page ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  usePageAnalytics("/dashboard");
   const navigate = useNavigate();
   const startSetup = useFlowTimerStore((s) => s.startSetup);
 

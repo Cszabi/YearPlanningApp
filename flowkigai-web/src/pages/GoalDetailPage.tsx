@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Typography, Stack, Chip, LinearProgress, Tabs, Tab,
@@ -59,6 +60,7 @@ export default function GoalDetailPage() {
   });
   const habit = habits?.find((h) => h.goalId === goalId);
 
+  const { logAction } = usePageAnalytics("/goals/:goalId");
   const [tab, setTab] = useState(0);
 
   // Header
@@ -306,7 +308,7 @@ export default function GoalDetailPage() {
       {/* ── Tabs ── */}
       <Tabs
         value={tab}
-        onChange={(_, v) => setTab(v)}
+        onChange={(_, v) => { setTab(v); logAction("tab_switched", ["overview","smart_woop","tasks","habit"][v]); }}
         sx={{ px: 4, bgcolor: "background.paper", borderBottom: 1, borderColor: "divider", minHeight: 44 }}
         TabIndicatorProps={{ style: { backgroundColor: "#0D6E6E" } }}
       >
