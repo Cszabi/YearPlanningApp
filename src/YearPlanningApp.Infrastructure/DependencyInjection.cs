@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 using YearPlanningApp.Application.Common.Interfaces;
 using YearPlanningApp.Domain.Entities;
 using YearPlanningApp.Domain.Interfaces;
@@ -51,6 +52,27 @@ public static class DependencyInjection
         services.AddScoped<WeeklyReviewReminderJob>();
         services.AddScoped<GoalDeadlineReminderJob>();
         services.AddScoped<HabitStreakRiskJob>();
+        services.AddScoped<AnalyticsFlushJob>();
+
+        // Redis connection (optional — analytics buffer falls back to direct DB writes if unavailable)
+        var redisConnStr = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisConnStr))
+        {
+            try
+            {
+                var multiplexer = ConnectionMultiplexer.Connect(redisConnStr);
+                services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+            }
+            catch
+            {
+                services.AddSingleton<IConnectionMultiplexer?>(_ => null!);
+            }
+        }
+        else
+        {
+            services.AddSingleton<IConnectionMultiplexer?>(_ => null!);
+        }
+        services.AddSingleton<IAnalyticsBuffer, AnalyticsBufferService>();
 
         return services;
     }

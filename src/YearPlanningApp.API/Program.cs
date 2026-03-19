@@ -136,6 +136,10 @@ using (var scope = app.Services.CreateScope())
         "habit-streak-risk",
         job => job.ExecuteAsync(CancellationToken.None),
         Cron.Hourly());
+    recurringJobs.AddOrUpdate<AnalyticsFlushJob>(
+        "analytics-flush",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.Minutely()); // flush Redis → Postgres every minute
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
