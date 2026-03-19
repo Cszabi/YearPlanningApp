@@ -12,6 +12,8 @@ public interface IUnitOfWork : IDisposable
     IReviewRepository Reviews { get; }
     IPushSubscriptionRepository PushSubscriptions { get; }
     INotificationPreferenceRepository NotificationPreferences { get; }
+    IPageSessionRepository PageSessions { get; }
+    IUserActionRepository UserActions { get; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task BeginTransactionAsync(CancellationToken ct = default);
     Task CommitTransactionAsync(CancellationToken ct = default);

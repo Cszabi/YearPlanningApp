@@ -20,6 +20,8 @@ public class UnitOfWork : IUnitOfWork
     public IReviewRepository Reviews { get; }
     public IPushSubscriptionRepository PushSubscriptions { get; }
     public INotificationPreferenceRepository NotificationPreferences { get; }
+    public IPageSessionRepository PageSessions { get; }
+    public IUserActionRepository UserActions { get; }
 
     public UnitOfWork(AppDbContext context)
     {
@@ -34,6 +36,8 @@ public class UnitOfWork : IUnitOfWork
         Reviews = new ReviewRepository(context);
         PushSubscriptions = new PushSubscriptionRepository(context);
         NotificationPreferences = new NotificationPreferenceRepository(context);
+        PageSessions = new PageSessionRepository(context);
+        UserActions = new UserActionRepository(context);
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)

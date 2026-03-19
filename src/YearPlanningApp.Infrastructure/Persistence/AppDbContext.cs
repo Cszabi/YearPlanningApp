@@ -26,6 +26,8 @@ public class AppDbContext : DbContext
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<PageSession> PageSessions => Set<PageSession>();
+    public DbSet<UserAction> UserActions => Set<UserAction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -150,6 +152,30 @@ public class AppDbContext : DbContext
             .IsUnique()
             .HasFilter("deleted_at IS NULL")
             .HasDatabaseName("idx_notification_preferences_user");
+
+        // ── Analytics — PageSession + UserAction (no soft-delete filter) ───
+        // Analytics data is retained permanently; no HasQueryFilter applied.
+        modelBuilder.Entity<PageSession>()
+            .HasIndex(s => new { s.UserId, s.Page, s.SessionStart })
+            .HasDatabaseName("idx_page_sessions_user_page_start");
+
+        modelBuilder.Entity<UserAction>()
+            .HasIndex(a => new { a.UserId, a.Page, a.OccurredAt })
+            .HasDatabaseName("idx_user_actions_user_page_occurred");
+
+        modelBuilder.Entity<UserAction>()
+            .HasIndex(a => a.PageSessionId)
+            .HasDatabaseName("idx_user_actions_session");
+
+        modelBuilder.Entity<UserAction>()
+            .Property(a => a.Metadata)
+            .HasColumnType("jsonb");
+
+        modelBuilder.Entity<UserAction>()
+            .HasOne(a => a.PageSession)
+            .WithMany(s => s.Actions)
+            .HasForeignKey(a => a.PageSessionId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ── snake_case naming convention ───────────────────────────────────
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
