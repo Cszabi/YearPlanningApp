@@ -109,8 +109,21 @@ public class IkigaiController : ControllerBase
             error => (IActionResult)BadRequest(Envelope.ValidationError(error))
         );
     }
+
+    // POST /api/v1/ikigai/extract-themes
+    [HttpPost("extract-themes")]
+    public async Task<IActionResult> ExtractThemes([FromBody] ExtractThemesRequest req, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ExtractIkigaiThemesCommand(req.Year), ct);
+        return result.Match(
+            extraction => Ok(Envelope.Success(extraction)),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound)),
+            error => BadRequest(Envelope.Error(error.Message, "EXTRACTION_ERROR"))
+        );
+    }
 }
 
 public record SaveRoomRequest(List<string> Answers, bool IsComplete);
 public record SaveNorthStarRequest(string Statement);
 public record SaveUserValuesRequest(List<SaveValueItem> Values);
+public record ExtractThemesRequest(int Year);

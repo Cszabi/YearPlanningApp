@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using YearPlanningApp.API.Models;
+using YearPlanningApp.Application.Ikigai;
 using YearPlanningApp.Application.MindMap;
 using YearPlanningApp.Domain.Enums;
 
@@ -129,6 +130,19 @@ public class MindMapController : ControllerBase
             error => BadRequest(Envelope.ValidationError(error))
         );
     }
+
+    // POST /api/v1/mind-maps/seed-from-ikigai
+    [HttpPost("seed-from-ikigai")]
+    public async Task<IActionResult> SeedFromIkigai([FromBody] SeedMindMapRequest req, CancellationToken ct)
+    {
+        var mode = Enum.Parse<MergeMode>(req.Mode, true);
+        var command = new SeedMindMapFromIkigaiCommand(req.Year, req.Themes, mode);
+        var result = await _mediator.Send(command, ct);
+        return result.Match(
+            _ => (IActionResult)Ok(Envelope.Success(new { seeded = true })),
+            notFound => NotFound(Envelope.NotFound(notFound))
+        );
+    }
 }
 
 public record AddNodeRequest(Guid? ParentNodeId, string NodeType, string Label, double PositionX, double PositionY);
@@ -136,3 +150,4 @@ public record UpdateNodeRequest(string? Label, string? Notes, double? PositionX,
 public record SavePositionsRequest(List<PositionItem> Positions);
 public record PositionItem(Guid NodeId, double X, double Y);
 public record ConvertToGoalRequest(string GoalType, string LifeArea);
+public record SeedMindMapRequest(int Year, IkigaiExtractionResult Themes, string Mode);
