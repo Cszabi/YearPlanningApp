@@ -171,6 +171,29 @@ public class GoalsController : ControllerBase
             conflict => Conflict(Envelope.Conflict(conflict.Message))
         );
     }
+
+    // PATCH /api/v1/goals/{id}/progress
+    [HttpPatch("{id:guid}/progress")]
+    public async Task<IActionResult> UpdateProgress(Guid id, [FromBody] UpdateProgressRequest body, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new UpdateGoalProgressCommand(id, body.ProgressPercent), ct);
+        return result.Match(
+            goal     => Ok(Envelope.Success(goal)),
+            notFound => (IActionResult)NotFound(Envelope.NotFound(notFound)),
+            error    => BadRequest(Envelope.ValidationError(error))
+        );
+    }
+
+    // GET /api/v1/goals/{id}/progress/history
+    [HttpGet("{id:guid}/progress/history")]
+    public async Task<IActionResult> GetProgressHistory(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetGoalProgressHistoryQuery(id), ct);
+        return result.Match(
+            snapshots => Ok(Envelope.Success(snapshots)),
+            notFound  => (IActionResult)NotFound(Envelope.NotFound(notFound))
+        );
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────────────────
@@ -207,3 +230,4 @@ public record SaveWoopRequest(int Year, string Wish, string Outcome, string Obst
 
 public record CreateMilestoneRequest(int Year, string Title, DateTime? TargetDate, int OrderIndex);
 public record UpdateMilestoneRequest(string? Title, DateTime? TargetDate, bool? IsComplete);
+public record UpdateProgressRequest(int ProgressPercent);
