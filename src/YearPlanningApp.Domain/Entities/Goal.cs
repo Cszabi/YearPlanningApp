@@ -18,6 +18,9 @@ public class Goal : BaseEntity
     public string AlignedValueNames { get; set; } = "[]"; // JSON array
     public SmartGoal? SmartGoal { get; set; }
     public WoopReflection? WoopReflection { get; set; }
+    public int ProgressPercent { get; set; } = 0;
+    public DateTime? CompletedAt { get; set; }
     public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
     public ICollection<FlowSession> FlowSessions { get; set; } = new List<FlowSession>();
+    public ICollection<GoalProgressSnapshot> ProgressSnapshots { get; set; } = new List<GoalProgressSnapshot>();
 }

@@ -14,6 +14,7 @@ public class UnitOfWork : IUnitOfWork
     public IIkigaiRepository Ikigai { get; }
     public IMindMapRepository MindMaps { get; }
     public IGoalRepository Goals { get; }
+    public IGoalProgressSnapshotRepository GoalProgressSnapshots { get; }
     public ITaskRepository Tasks { get; }
     public IHabitRepository Habits { get; }
     public IFlowSessionRepository FlowSessions { get; }
@@ -30,6 +31,7 @@ public class UnitOfWork : IUnitOfWork
         Ikigai = new IkigaiRepository(context);
         MindMaps = new MindMapRepository(context);
         Goals = new GoalRepository(context);
+        GoalProgressSnapshots = new GoalProgressSnapshotRepository(context);
         Tasks = new TaskRepository(context);
         Habits = new HabitRepository(context);
         FlowSessions = new FlowSessionRepository(context);

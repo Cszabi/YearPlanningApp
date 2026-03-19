@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<MindMap> MindMaps => Set<MindMap>();
     public DbSet<MindMapNode> MindMapNodes => Set<MindMapNode>();
     public DbSet<Goal> Goals => Set<Goal>();
+    public DbSet<GoalProgressSnapshot> GoalProgressSnapshots => Set<GoalProgressSnapshot>();
     public DbSet<SmartGoal> SmartGoals => Set<SmartGoal>();
     public DbSet<WoopReflection> WoopReflections => Set<WoopReflection>();
     public DbSet<Milestone> Milestones => Set<Milestone>();
@@ -52,6 +53,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Review>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<PushSubscription>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<NotificationPreference>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<GoalProgressSnapshot>().HasQueryFilter(e => e.DeletedAt == null);
 
         // ── Enums stored as integers (default in EF Core) ─────────────────
         // No extra config needed — int storage is the default
@@ -92,6 +94,19 @@ public class AppDbContext : DbContext
             .HasIndex(g => new { g.UserId, g.Year, g.EnergyLevel })
             .HasFilter("deleted_at IS NULL")
             .HasDatabaseName("idx_goals_user_year_energy");
+
+        // GoalProgressSnapshots
+        modelBuilder.Entity<GoalProgressSnapshot>()
+            .HasOne(s => s.Goal)
+            .WithMany(g => g.ProgressSnapshots)
+            .HasForeignKey(s => s.GoalId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GoalProgressSnapshot>()
+            .HasIndex(s => new { s.GoalId, s.SnapshotDate })
+            .IsUnique()
+            .HasFilter("deleted_at IS NULL")
+            .HasDatabaseName("idx_goal_progress_snapshots_goal_date");
 
         // FlowSessions
         modelBuilder.Entity<FlowSession>()

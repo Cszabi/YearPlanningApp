@@ -6,6 +6,7 @@ public interface IUnitOfWork : IDisposable
     IIkigaiRepository Ikigai { get; }
     IMindMapRepository MindMaps { get; }
     IGoalRepository Goals { get; }
+    IGoalProgressSnapshotRepository GoalProgressSnapshots { get; }
     ITaskRepository Tasks { get; }
     IHabitRepository Habits { get; }
     IFlowSessionRepository FlowSessions { get; }
