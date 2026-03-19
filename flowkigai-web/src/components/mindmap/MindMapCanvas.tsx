@@ -24,12 +24,14 @@ import { habitApi } from "@/api/habitApi";
 import { LIFE_AREA_COLORS, LIFE_AREA_NAMES } from "./nodes";
 import RadialTreeView from "./RadialTreeView";
 import TidyTreeView from "./TidyTreeView";
+import ForceDirectedView from "./ForceDirectedView";
 
 // ── View registry ─────────────────────────────────────────────────────────────
 const VIEW_OPTIONS = [
-  { value: "sunburst",    label: "Sunburst",    icon: "☀️" },
-  { value: "radial-tree", label: "Radial Tree", icon: "🌿" },
-  { value: "tidy-tree",   label: "Tidy Tree",   icon: "🌳" },
+  { value: "sunburst",        label: "Sunburst",        icon: "☀️" },
+  { value: "radial-tree",     label: "Radial Tree",     icon: "🌿" },
+  { value: "tidy-tree",       label: "Tidy Tree",       icon: "🌳" },
+  { value: "force-directed",  label: "Force-Directed",  icon: "🕸️" },
 ] as const;
 type ViewMode = (typeof VIEW_OPTIONS)[number]["value"];
 
@@ -831,6 +833,27 @@ export default function MindMapCanvas() {
       {viewMode === "tidy-tree" && (
         focusFilteredNodes.some((n) => n.parentNodeId === null) ? (
           <TidyTreeView
+            nodes={focusFilteredNodes}
+            canGoUp={focusedId !== null}
+            onZoomIn={setFocusedId}
+            onZoomOut={() => setFocusedId(focusedParentId)}
+            onContextMenu={(id, x, y) => setContextMenu({ nodeId: id, x, y })}
+            onRename={(id, label, x, y) => { setInlineEdit({ nodeId: id, label, x, y }); setInlineEditValue(label); }}
+            onHover={handleHover}
+            focusMode={focusMode}
+            focusColorMap={focusColorMap}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+            <p className="text-4xl">🗺️</p>
+            <p className="text-sm text-gray-400">Complete the Ikigai journey to populate your map</p>
+          </div>
+        )
+      )}
+
+      {viewMode === "force-directed" && (
+        focusFilteredNodes.some((n) => n.parentNodeId === null) ? (
+          <ForceDirectedView
             nodes={focusFilteredNodes}
             canGoUp={focusedId !== null}
             onZoomIn={setFocusedId}
