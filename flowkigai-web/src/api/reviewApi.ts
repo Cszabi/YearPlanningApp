@@ -23,6 +23,8 @@ export interface FlowWeeklySummary {
 export interface GoalSummary {
   id: string;
   title: string;
+  goalType: string;
+  progressPercent: number;
 }
 
 export interface WeeklyReviewDataDto {

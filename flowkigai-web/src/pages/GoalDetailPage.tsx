@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Box, Typography, Stack, Chip, LinearProgress, Tabs, Tab,
+  Box, Typography, Stack, Chip, Tabs, Tab,
   Button, IconButton, TextField, CircularProgress, Alert,
   Divider, Checkbox, Tooltip, Menu, MenuItem,
 } from "@mui/material";
@@ -15,7 +15,9 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import AddIcon from "@mui/icons-material/Add";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import { goalApi, type MilestoneDto, type TaskDto } from "@/api/goalApi";
+import { goalApi, type MilestoneDto, type TaskDto, type GoalProgressSnapshotDto } from "@/api/goalApi";
+import GoalProgressBar from "@/components/goals/GoalProgressBar";
+import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { habitApi } from "@/api/habitApi";
 
 const YEAR = new Date().getFullYear();
@@ -59,6 +61,12 @@ export default function GoalDetailPage() {
     enabled: goal?.goalType === "Repetitive",
   });
   const habit = habits?.find((h) => h.goalId === goalId);
+
+  const { data: progressHistory } = useQuery<GoalProgressSnapshotDto[]>({
+    queryKey: ["goal-progress-history", goalId],
+    queryFn: () => goalApi.getProgressHistory(goalId!),
+    enabled: !!goalId && goal?.goalType === "Project",
+  });
 
   const { logAction } = usePageAnalytics("/goals/:goalId");
   const [tab, setTab] = useState(0);
@@ -285,13 +293,56 @@ export default function GoalDetailPage() {
               )}
             </Stack>
 
-            <Box mt={1.5} maxWidth={480}>
-              <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                <Typography variant="caption" color="text.disabled">Progress</Typography>
-                <Typography variant="caption" color="text.disabled" fontWeight={600}>{Math.round(goal.progress)}%</Typography>
-              </Stack>
-              <LinearProgress variant="determinate" value={goal.progress} sx={{ height: 6, borderRadius: 3 }} />
-            </Box>
+            {goal.goalType === "Project" && (
+              <Box mt={1.5} maxWidth={480}>
+                <GoalProgressBar
+                  percent={goal.progressPercent}
+                  goalId={goal.id}
+                  editable
+                  size="md"
+                  onUpdated={(updated) => {
+                    queryClient.setQueryData(["goal", goalId, YEAR], updated);
+                    queryClient.setQueryData<import("@/api/goalApi").GoalDto[]>(
+                      ["goals", YEAR],
+                      (prev) => prev?.map((g) => (g.id === updated.id ? updated : g)) ?? prev
+                    );
+                    queryClient.invalidateQueries({ queryKey: ["goal-progress-history", goalId] });
+                  }}
+                />
+                {progressHistory && progressHistory.length > 1 && (
+                  <Box mt={2}>
+                    <Typography variant="caption" color="text.disabled" sx={{ mb: 0.5, display: "block" }}>
+                      Progress history
+                    </Typography>
+                    <ResponsiveContainer width="100%" height={90}>
+                      <LineChart data={progressHistory} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+                        <XAxis
+                          dataKey="snapshotDate"
+                          tick={{ fontSize: 10 }}
+                          tickFormatter={(d: string) => {
+                            const [, m, day] = d.split("-");
+                            return `${parseInt(m)}/${parseInt(day)}`;
+                          }}
+                        />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                        <RechartsTooltip
+                          formatter={(val: number) => [`${val}%`, "Progress"]}
+                          contentStyle={{ fontSize: 12 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="progressPercent"
+                          stroke="#0D9E9E"
+                          strokeWidth={2}
+                          dot={{ r: 3 }}
+                          activeDot={{ r: 5 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                )}
+              </Box>
+            )}
           </Box>
 
           <Button

@@ -10,6 +10,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SaveIcon from "@mui/icons-material/Save";
 import { reviewApi, type ReviewDto, type ReviewAnswers, type WeeklyReviewDataDto } from "@/api/reviewApi";
 import { ikigaiApi } from "@/api/ikigaiApi";
+import GoalProgressBar from "@/components/goals/GoalProgressBar";
 
 const YEAR = new Date().getFullYear();
 const ENERGY_LABELS = ["Drained", "Low", "Neutral", "Good", "Energised"];
@@ -412,12 +413,22 @@ export default function WeeklyReview({ weekStartDate, onBack }: Props) {
                   sx={{ textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 1.5 }}>
                   Next action for each active goal
                 </Typography>
-                <Stack gap={1.5}>
+                <Stack gap={2}>
                   {activeGoals.map((g) => (
                     <Box key={g.id}>
                       <Typography variant="caption" color="text.disabled" sx={{ display: "block", mb: 0.5 }}>
                         {g.title}
                       </Typography>
+                      {g.goalType === "Project" && (
+                        <Box mb={1}>
+                          <GoalProgressBar
+                            percent={g.progressPercent}
+                            goalId={g.id}
+                            editable
+                            size="sm"
+                          />
+                        </Box>
+                      )}
                       <TextField
                         fullWidth size="small" placeholder="What's the next action?"
                         value={goalNextActions[g.id] ?? ""}

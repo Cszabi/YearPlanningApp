@@ -16,7 +16,7 @@ function GoalCard({ goal, habits }: { goal: GoalDto; habits: HabitDto[] }) {
   const areaColor = LIFE_AREA_COLOR[goal.lifeArea] ?? C.teal;
   const areaEmoji = LIFE_AREA_EMOJI[goal.lifeArea] ?? "🎯";
   const goalHabits = habits.filter((h) => h.goalId === goal.id);
-  const s = progressBarStyles(goal.progress, areaColor);
+  const s = progressBarStyles(goal.progressPercent, areaColor);
   const statusBg = goal.status === "Achieved" ? C.emeraldLight : C.tealLight;
   const statusColor = goal.status === "Achieved" ? C.emerald : C.teal;
 
@@ -54,7 +54,7 @@ function GoalCard({ goal, habits }: { goal: GoalDto; habits: HabitDto[] }) {
           <View style={s.track}><View style={s.fill} /></View>
         </View>
         <Text style={[base.bodyText, { fontFamily: "Helvetica-Bold", color: areaColor, width: 36, textAlign: "right" }]}>
-          {goal.progress}%
+          {goal.progressPercent}%
         </Text>
       </View>
 
@@ -118,7 +118,7 @@ interface Props { goals: GoalDto[]; habits: HabitDto[]; year: number }
 export default function GoalsSummaryPdf({ goals, habits, year }: Props) {
   const active    = goals.filter((g) => g.status !== "Achieved");
   const achieved  = goals.filter((g) => g.status === "Achieved");
-  const avgProgress = active.length > 0 ? Math.round(active.reduce((s, g) => s + g.progress, 0) / active.length) : 0;
+  const avgProgress = active.length > 0 ? Math.round(active.reduce((s, g) => s + g.progressPercent, 0) / active.length) : 0;
 
   return (
     <Document title={`Goals ${year}`} author="Flowkigai">

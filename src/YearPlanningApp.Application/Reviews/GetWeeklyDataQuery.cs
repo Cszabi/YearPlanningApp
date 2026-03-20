@@ -33,7 +33,7 @@ public class GetWeeklyDataQueryHandler
 
         var activeGoals = goals
             .Where(g => g.Status == GoalStatus.Active)
-            .Select(g => new GoalSummaryDto(g.Id.ToString(), g.Title))
+            .Select(g => new GoalSummaryDto(g.Id.ToString(), g.Title, g.GoalType.ToString(), g.ProgressPercent))
             .ToList();
 
         // ── Completed / carried-over tasks ────────────────────────────────────

@@ -40,7 +40,7 @@ public record WeeklyReviewDataDto(
 public record CompletedTaskSummaryDto(string TaskId, string Title, string GoalTitle);
 public record HabitWeeklySummaryDto(string HabitId, string Title, int DaysCompleted, int DaysExpected);
 public record FlowWeeklySummaryDto(int SessionCount, int TotalMinutes, double? AvgFlowQuality, string? BestOutcome);
-public record GoalSummaryDto(string Id, string Title);
+public record GoalSummaryDto(string Id, string Title, string GoalType, int ProgressPercent);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 internal static class ReviewMappings

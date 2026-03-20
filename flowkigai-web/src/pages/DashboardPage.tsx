@@ -122,13 +122,13 @@ function GoalProgressWidget({ goals }: { goals: GoalDto[] }) {
                     sx={{ fontSize: "0.65rem" }}
                   />
                   <Typography variant="caption" color="text.disabled" sx={{ minWidth: 32, textAlign: "right" }}>
-                    {g.progress}%
+                    {g.progressPercent}%
                   </Typography>
                 </Stack>
               </Stack>
               <LinearProgress
                 variant="determinate"
-                value={g.progress}
+                value={g.progressPercent}
                 sx={{
                   height: 5, borderRadius: 3,
                   bgcolor: "action.hover",

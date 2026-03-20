@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import {
-  Box, Card, CardContent, Chip, LinearProgress, Typography,
+  Box, Card, CardContent, Chip, Typography,
   Stack, Divider, IconButton, Checkbox, Tooltip, Collapse,
   Menu, MenuItem, TextField, Button, CircularProgress, Snackbar, Alert,
 } from "@mui/material";
@@ -15,6 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { goalApi, type GoalDto, type MilestoneDto } from "@/api/goalApi";
+import GoalProgressBar from "./GoalProgressBar";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -477,15 +478,23 @@ export default function GoalCard({ goal }: Props) {
             )}
           </Stack>
 
-          {/* Progress */}
-          <Box mb={1}>
-            <Stack direction="row" justifyContent="space-between" mb={0.5}>
-              <Typography variant="caption" color="text.disabled">Progress</Typography>
-              <Typography variant="caption" color="text.disabled">{Math.round(goal.progress)}%</Typography>
-            </Stack>
-            <LinearProgress variant="determinate" value={goal.progress}
-              sx={{ "& .MuiLinearProgress-bar": { bgcolor: areaColor }, bgcolor: areaColor + "22" }} />
-          </Box>
+          {/* Progress — Project goals only */}
+          {goal.goalType === "Project" && (
+            <Box mb={1}>
+              <GoalProgressBar
+                percent={goal.progressPercent}
+                goalId={goal.id}
+                editable
+                size="sm"
+                onUpdated={(updated) => {
+                  queryClient.setQueryData<GoalDto[]>(
+                    ["goals", goal.year],
+                    (prev) => prev?.map((g) => (g.id === updated.id ? updated : g)) ?? prev
+                  );
+                }}
+              />
+            </Box>
+          )}
 
           {/* Values */}
           {goal.alignedValueNames.length > 0 && (
