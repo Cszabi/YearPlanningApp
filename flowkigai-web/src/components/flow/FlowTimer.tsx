@@ -150,9 +150,11 @@ export default function FlowTimer() {
     setInterrupting(true);
     try {
       await flowSessionApi.interrupt(session.id, interruptReason.trim() || "—");
-    } catch { /* silent */ }
-    setInterruptOpen(false);
-    reset();
+      setInterruptOpen(false);
+      reset();
+    } catch {
+      setInterrupting(false);
+    }
   }
 
   const isPaused = phase === "paused";

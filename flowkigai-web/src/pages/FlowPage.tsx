@@ -11,19 +11,25 @@ import { useState } from "react";
 
 export default function FlowPage() {
   usePageAnalytics("/flow");
-  const { phase, startSetup, restoreRunning } = useFlowTimerStore();
+  const { phase, startSetup, restoreRunning, reset } = useFlowTimerStore();
   const [checking, setChecking] = useState(true);
   const [checkError, setCheckError] = useState(false);
 
-  // On mount: check for an active session and restore if found
+  // On mount: sync store with DB session state
   useEffect(() => {
     let cancelled = false;
     async function checkActive() {
       try {
         const active = await flowSessionApi.getActive();
-        if (!cancelled && active) {
-          const elapsedSec = Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000);
-          restoreRunning(active, elapsedSec);
+        if (!cancelled) {
+          if (active && phase === "idle") {
+            // Resume a session that was started in another tab or before a navigation
+            const elapsedSec = Math.floor((Date.now() - new Date(active.startedAt).getTime()) / 1000);
+            restoreRunning(active, elapsedSec);
+          } else if (!active && (phase === "running" || phase === "paused" || phase === "microreview")) {
+            // Session is gone from DB (ended elsewhere) but store is stale — reset
+            reset();
+          }
         }
       } catch {
         if (!cancelled) setCheckError(true);
