@@ -98,6 +98,10 @@ export default function WeeklyReview({ weekStartDate, onBack }: Props) {
   // Mark dirty on any change
   function markDirty() { isDirty.current = true; setSaveStatus("idle"); }
 
+  // ── Stable ref to latest doSave — avoids stale-closure in timer/cleanup ──
+  const doSaveRef = useRef<(complete?: boolean) => Promise<void>>(() => Promise.resolve());
+  useEffect(() => { doSaveRef.current = doSave; }); // runs after every render
+
   // ── Auto-save ────────────────────────────────────────────────────────────
   async function doSave(complete = false) {
     if (!isDirty.current && !complete) return;
@@ -134,15 +138,15 @@ export default function WeeklyReview({ weekStartDate, onBack }: Props) {
     }
   }
 
+  // Single stable interval + unmount effect; always calls latest doSave via ref
   useEffect(() => {
-    const interval = setInterval(() => { doSave(); }, 30_000);
+    const interval = setInterval(() => { void doSaveRef.current(); }, 30_000);
     return () => {
       clearInterval(interval);
-      doSave(); // save on unmount
+      void doSaveRef.current(); // save on unmount with current values
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedId, energyRating, completedTaskNotes, carriedOverNote, habitNotes,
-      priority1, priority2, priority3, flowScheduled, goalNextActions, valuesReflection, isComplete]);
+  }, []);
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const top5Values = journey?.values
