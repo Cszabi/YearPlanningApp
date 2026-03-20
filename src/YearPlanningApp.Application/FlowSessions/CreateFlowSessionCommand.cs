@@ -34,7 +34,7 @@ public class CreateFlowSessionCommandValidator : AbstractValidator<CreateFlowSes
         RuleFor(x => x.AmbientSound)
             .NotEmpty()
             .Must(v => Enum.TryParse<AmbientSoundMode>(v, true, out _))
-            .WithMessage("AmbientSound must be None, BrownNoise, WhiteNoise, or Nature.");
+            .WithMessage("AmbientSound must be None, BrownNoise, WhiteNoise, Nature, or FocusMusic.");
     }
 }
 
