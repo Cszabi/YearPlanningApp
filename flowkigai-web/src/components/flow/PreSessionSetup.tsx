@@ -39,7 +39,8 @@ export default function PreSessionSetup() {
   const [intention,   setIntention]   = useState("");
   const [energyLevel, setEnergyLevel] = useState("Medium");
   const [minutes,     setMinutes]     = useState(45);
-  const [customMin,   setCustomMin]   = useState("");
+  const [customVal,   setCustomVal]   = useState("");
+  const [customUnit,  setCustomUnit]  = useState<"min" | "hr">("min");
   const [ambient,      setAmbient]      = useState("None");
   const [overTimeMode, setOverTimeMode] = useState<"None" | "Visual" | "VisualAndTone">("None");
   const [starting,     setStarting]    = useState(false);
@@ -56,9 +57,11 @@ export default function PreSessionSetup() {
   const selectedTask = availableTasks.find((t) => t.id === taskItemId);
 
   const presets = ENERGY_PRESETS[energyLevel] ?? [45, 30, 25];
-  const customMinNum = customMin ? parseInt(customMin) : null;
-  const customMinValid = customMinNum === null || (customMinNum >= 5 && customMinNum <= 240);
-  const actualMinutes = customMinNum ?? minutes;
+  const customValNum = customVal ? parseInt(customVal) : null;
+  const customValValid = customValNum === null || customValNum >= 1;
+  const customActualMinutes = customValNum === null ? null
+    : customUnit === "hr" ? customValNum * 60 : customValNum;
+  const actualMinutes = customActualMinutes ?? minutes;
 
   async function handleBegin() {
     if (starting) return;
@@ -157,7 +160,7 @@ export default function PreSessionSetup() {
           Energy level
         </Typography>
         <ToggleButtonGroup value={energyLevel} exclusive size="small"
-          onChange={(_, v) => { if (v) { setEnergyLevel(v); setMinutes(ENERGY_PRESETS[v]?.[0] ?? 45); setCustomMin(""); } }}
+          onChange={(_, v) => { if (v) { setEnergyLevel(v); setMinutes(ENERGY_PRESETS[v]?.[0] ?? 45); setCustomVal(""); } }}
           sx={{ mb: 2 }}>
           <ToggleButton value="Deep">🔵 Deep</ToggleButton>
           <ToggleButton value="Medium">🟡 Medium</ToggleButton>
@@ -168,21 +171,31 @@ export default function PreSessionSetup() {
         <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: "block", textTransform: "uppercase", letterSpacing: 0.5 }}>
           Duration
         </Typography>
-        <Stack direction="row" gap={1} mb={2} alignItems="center">
+        <Stack direction="row" gap={1} mb={2} alignItems="flex-start" flexWrap="wrap">
           {presets.map((p) => (
-            <Button key={p} size="small" variant={minutes === p && !customMin ? "contained" : "outlined"}
-              onClick={() => { setMinutes(p); setCustomMin(""); }} sx={{ borderRadius: 3 }}>
+            <Button key={p} size="small" variant={minutes === p && !customVal ? "contained" : "outlined"}
+              onClick={() => { setMinutes(p); setCustomVal(""); }} sx={{ borderRadius: 3 }}>
               {p}m
             </Button>
           ))}
-          <TextField
-            size="small" placeholder="Custom" value={customMin}
-            onChange={(e) => setCustomMin(e.target.value.replace(/\D/, ""))}
-            inputProps={{ min: 5, max: 240, style: { width: 60 } }}
-            error={!!customMin && !customMinValid}
-            helperText={!!customMin && !customMinValid ? "5–240 min" : undefined}
-            sx={{ "& input": { textAlign: "center" } }}
-          />
+          <Stack direction="row" gap={0.5} alignItems="flex-start">
+            <TextField
+              size="small" placeholder="Custom" value={customVal}
+              onChange={(e) => setCustomVal(e.target.value.replace(/\D/, ""))}
+              inputProps={{ min: 1, style: { width: 64 } }}
+              error={!!customVal && !customValValid}
+              helperText={!!customVal && !customValValid ? "Min. 1" : undefined}
+              sx={{ "& input": { textAlign: "center" } }}
+            />
+            <ToggleButtonGroup
+              value={customUnit} exclusive size="small"
+              onChange={(_, v) => { if (v) setCustomUnit(v); }}
+              sx={{ height: 40 }}
+            >
+              <ToggleButton value="min" sx={{ px: 1.5 }}>min</ToggleButton>
+              <ToggleButton value="hr" sx={{ px: 1.5 }}>hr</ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
         </Stack>
 
         {/* Sounds */}
@@ -228,7 +241,7 @@ export default function PreSessionSetup() {
 
         {/* Actions */}
         <Stack direction="row" gap={2}>
-          <Button variant="contained" size="large" onClick={handleBegin} disabled={starting || !customMinValid}
+          <Button variant="contained" size="large" onClick={handleBegin} disabled={starting || !customValValid}
             sx={{ borderRadius: 6, flex: 1 }}>
             {starting ? <CircularProgress size={20} color="inherit" /> : "Begin session →"}
           </Button>

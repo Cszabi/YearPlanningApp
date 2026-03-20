@@ -18,7 +18,10 @@ public record CreateHabitCommand(
     string? IdealDose,
     string? Trigger,
     string? CelebrationRitual,
-    HabitTrackingMethod TrackingMethod)
+    HabitTrackingMethod TrackingMethod,
+    bool NotificationEnabled = false,
+    int? ReminderHour = null,
+    int? ReminderMinute = null)
     : ICommand<OneOf<HabitDto, NotFoundError, ValidationError>>, IAuthenticatedCommand;
 
 public class CreateHabitCommandValidator : AbstractValidator<CreateHabitCommand>
@@ -27,6 +30,14 @@ public class CreateHabitCommandValidator : AbstractValidator<CreateHabitCommand>
     {
         RuleFor(x => x.Title).NotEmpty().MaximumLength(300);
         RuleFor(x => x.MinimumViableDose).NotEmpty().MaximumLength(500);
+        When(x => x.NotificationEnabled, () => {
+            RuleFor(x => x.ReminderHour)
+                .NotNull().WithMessage("ReminderHour is required when notifications are enabled.")
+                .InclusiveBetween(0, 23).WithMessage("ReminderHour must be 0–23.");
+            RuleFor(x => x.ReminderMinute)
+                .NotNull().WithMessage("ReminderMinute is required when notifications are enabled.")
+                .InclusiveBetween(0, 59).WithMessage("ReminderMinute must be 0–59.");
+        });
     }
 }
 
@@ -62,6 +73,9 @@ public class CreateHabitCommandHandler
             TrackingMethod = command.TrackingMethod,
             CurrentStreak = 0,
             LongestStreak = 0,
+            NotificationEnabled = command.NotificationEnabled,
+            ReminderHour = command.ReminderHour,
+            ReminderMinute = command.ReminderMinute,
         };
 
         await _uow.Habits.AddAsync(habit, ct);

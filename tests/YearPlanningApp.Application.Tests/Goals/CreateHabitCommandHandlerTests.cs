@@ -93,4 +93,85 @@ public class CreateHabitCommandHandlerTests
         result.AsT0.Trigger.ShouldBe("Morning alarm");
         result.AsT0.CelebrationRitual.ShouldBe("Coffee reward");
     }
+
+    [Fact]
+    public async Task Handle_ShouldSetNotificationEnabled_WhenProvided()
+    {
+        var goal = BuildGoal();
+        _uow.Goals.GetByIdAsync(goal.Id, Arg.Any<CancellationToken>()).Returns(goal);
+        Habit? savedHabit = null;
+        await _uow.Habits.AddAsync(Arg.Do<Habit>(h => savedHabit = h), Arg.Any<CancellationToken>());
+
+        var result = await _handler.Handle(
+            new CreateHabitCommand(goal.Id, 2026, "Take pills", HabitFrequency.Daily,
+                "1 pill", null, null, null, HabitTrackingMethod.YesNo,
+                NotificationEnabled: true, ReminderHour: 8),
+            CancellationToken.None);
+
+        result.IsT0.ShouldBeTrue();
+        result.AsT0.NotificationEnabled.ShouldBeTrue();
+        result.AsT0.ReminderHour.ShouldBe(8);
+        savedHabit.ShouldNotBeNull();
+        savedHabit!.NotificationEnabled.ShouldBeTrue();
+        savedHabit.ReminderHour.ShouldBe(8);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldLeaveNotificationDisabled_ByDefault()
+    {
+        var goal = BuildGoal();
+        _uow.Goals.GetByIdAsync(goal.Id, Arg.Any<CancellationToken>()).Returns(goal);
+
+        var result = await _handler.Handle(
+            new CreateHabitCommand(goal.Id, 2026, "Morning Run", HabitFrequency.Daily,
+                "5 minutes", null, null, null, HabitTrackingMethod.YesNo),
+            CancellationToken.None);
+
+        result.IsT0.ShouldBeTrue();
+        result.AsT0.NotificationEnabled.ShouldBeFalse();
+        result.AsT0.ReminderHour.ShouldBeNull();
+    }
+}
+
+// ── CreateHabitCommand validator tests ────────────────────────────────────────
+
+public class CreateHabitCommandValidatorTests
+{
+    private readonly CreateHabitCommandValidator _validator = new();
+
+    private static CreateHabitCommand BaseCommand(bool notificationEnabled = false, int? reminderHour = null, int? reminderMinute = null) =>
+        new(Guid.NewGuid(), 2026, "Run", HabitFrequency.Daily, "5 min",
+            null, null, null, HabitTrackingMethod.YesNo, notificationEnabled, reminderHour, reminderMinute);
+
+    [Fact]
+    public void Validate_Fails_WhenEnabledAndReminderHourIsNull()
+    {
+        var result = _validator.Validate(BaseCommand(notificationEnabled: true, reminderHour: null));
+        result.IsValid.ShouldBeFalse();
+        result.Errors.ShouldContain(e => e.PropertyName == nameof(CreateHabitCommand.ReminderHour));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(24)]
+    public void Validate_Fails_WhenEnabledAndReminderHourOutOfRange(int hour)
+    {
+        var result = _validator.Validate(BaseCommand(notificationEnabled: true, reminderHour: hour));
+        result.IsValid.ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(12)]
+    [InlineData(23)]
+    public void Validate_Passes_WhenEnabledAndReminderHourIsValid(int hour)
+    {
+        _validator.Validate(BaseCommand(notificationEnabled: true, reminderHour: hour, reminderMinute: 0)).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_Passes_WhenDisabledWithNoHour()
+    {
+        _validator.Validate(BaseCommand()).IsValid.ShouldBeTrue();
+    }
 }

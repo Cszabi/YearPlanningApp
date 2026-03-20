@@ -78,7 +78,10 @@ public record HabitDto(
     string? CelebrationRitual,
     int CurrentStreak,
     int LongestStreak,
-    IReadOnlyList<HabitLogDto> RecentLogs);
+    IReadOnlyList<HabitLogDto> RecentLogs,
+    bool NotificationEnabled,
+    int? ReminderHour,
+    int? ReminderMinute);
 
 // ── GoalProgressSnapshot ──────────────────────────────────────────────────────
 public record GoalProgressSnapshotDto(
@@ -138,6 +141,7 @@ public static class GoalMappings
             h.Id, h.GoalId, h.Title,
             h.Frequency.ToString(), h.TrackingMethod.ToString(),
             h.MinimumViableDose, h.IdealDose, h.Trigger, h.CelebrationRitual,
-            h.CurrentStreak, h.LongestStreak, recentLogs);
+            h.CurrentStreak, h.LongestStreak, recentLogs,
+            h.NotificationEnabled, h.ReminderHour, h.ReminderMinute);
     }
 }

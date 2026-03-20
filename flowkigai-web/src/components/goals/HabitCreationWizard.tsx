@@ -1,4 +1,6 @@
 import { useState } from "react";
+import dayjs, { type Dayjs } from "dayjs";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { goalApi } from "@/api/goalApi";
 import { habitApi } from "@/api/habitApi";
 
@@ -22,7 +24,7 @@ const FREQUENCIES = [
   { key: "Custom",  label: "Custom",  icon: "⚙️", desc: "Your own schedule" },
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 interface HabitDraft {
   title: string;
@@ -74,6 +76,8 @@ export default function HabitCreationWizard({ onClose }: Props) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<HabitDraft>(EMPTY);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState<Dayjs>(dayjs().hour(8).minute(0).second(0));
 
   const update = (patch: Partial<HabitDraft>) => setDraft(d => ({ ...d, ...patch }));
 
@@ -99,6 +103,9 @@ export default function HabitCreationWizard({ onClose }: Props) {
         frequency: draft.frequency,
         minimumViableDose: draft.minimumViableDose,
         trackingMethod: "Streak",
+        notificationEnabled,
+        reminderHour: notificationEnabled ? reminderTime.hour() : null,
+        reminderMinute: notificationEnabled ? reminderTime.minute() : null,
       });
 
       onClose();
@@ -196,8 +203,36 @@ export default function HabitCreationWizard({ onClose }: Props) {
           </WizardShell>
         );
 
-      // ── Step 4: Summary + Create ─────────────────────────────────────────
-      case 4: {
+      // ── Step 4: Notification ─────────────────────────────────────────────
+      case 4:
+        return (
+          <WizardShell step={4} onBack={goBack} onNext={goNext}>
+            <FieldLabel>Would you like a reminder for this habit?</FieldLabel>
+            <label className="flex items-center gap-3 mb-6 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={notificationEnabled}
+                onChange={e => setNotificationEnabled(e.target.checked)}
+                className="w-5 h-5 rounded"
+              />
+              <span className="text-gray-700">Enable reminder</span>
+            </label>
+            {notificationEnabled && (
+              <div className="mt-2">
+                <TimePicker
+                  label="Reminder time"
+                  value={reminderTime}
+                  onChange={v => v && setReminderTime(v)}
+                  ampm={false}
+                  slotProps={{ textField: { size: "small" } }}
+                />
+              </div>
+            )}
+          </WizardShell>
+        );
+
+      // ── Step 5: Summary + Create ─────────────────────────────────────────
+      case 5: {
         const freq = FREQUENCIES.find(f => f.key === draft.frequency);
         const area = LIFE_AREAS.find(l => l.key === draft.lifeArea);
         return (
@@ -227,6 +262,15 @@ export default function HabitCreationWizard({ onClose }: Props) {
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Minimum viable dose</div>
                 <p className="text-sm text-gray-700">{draft.minimumViableDose}</p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Reminder</div>
+                <p className="text-sm text-gray-700">
+                  {notificationEnabled
+                    ? `${reminderTime.format("HH:mm")} daily`
+                    : "No reminder set"}
+                </p>
               </div>
             </div>
 

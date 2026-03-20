@@ -17,5 +17,8 @@ public class Habit : BaseEntity
     public HabitTrackingMethod TrackingMethod { get; set; }
     public int CurrentStreak { get; set; }
     public int LongestStreak { get; set; }
+    public bool NotificationEnabled { get; set; } = false;
+    public int? ReminderHour { get; set; }
+    public int? ReminderMinute { get; set; }
     public ICollection<HabitLog> Logs { get; set; } = new List<HabitLog>();
 }

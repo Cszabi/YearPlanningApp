@@ -39,7 +39,10 @@ public class HabitsController : ControllerBase
             body.IdealDose,
             body.Trigger,
             body.CelebrationRitual,
-            Enum.Parse<HabitTrackingMethod>(body.TrackingMethod, true));
+            Enum.Parse<HabitTrackingMethod>(body.TrackingMethod, true),
+            body.NotificationEnabled,
+            body.ReminderHour,
+            body.ReminderMinute);
 
         var result = await _mediator.Send(command, ct);
         return result.Match(
@@ -59,6 +62,33 @@ public class HabitsController : ControllerBase
             notFound => (IActionResult)NotFound(Envelope.NotFound(notFound))
         );
     }
+
+    // DELETE /api/v1/habits/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteHabit(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new DeleteHabitCommand(id), ct);
+        return result.Match<IActionResult>(
+            _ => NoContent(),
+            notFound => NotFound(Envelope.NotFound(notFound))
+        );
+    }
+
+    // PATCH /api/v1/habits/{id}/notification
+    [HttpPatch("{id:guid}/notification")]
+    public async Task<IActionResult> UpdateNotification(
+        Guid id,
+        [FromBody] UpdateHabitNotificationRequest req,
+        CancellationToken ct)
+    {
+        var cmd = new UpdateHabitNotificationCommand(id, req.NotificationEnabled, req.ReminderHour, req.ReminderMinute);
+        var result = await _mediator.Send(cmd, ct);
+        return result.Match<IActionResult>(
+            dto    => Ok(Envelope.Success(dto)),
+            err    => BadRequest(Envelope.ValidationError(err)),
+            _      => NotFound()
+        );
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────────────────
@@ -71,6 +101,10 @@ public record CreateHabitRequest(
     string? IdealDose,
     string? Trigger,
     string? CelebrationRitual,
-    string TrackingMethod);
+    string TrackingMethod,
+    bool NotificationEnabled = false,
+    int? ReminderHour = null,
+    int? ReminderMinute = null);
 
 public record LogHabitRequest(string? Notes, int? DurationMinutes);
+public record UpdateHabitNotificationRequest(bool NotificationEnabled, int? ReminderHour, int? ReminderMinute);

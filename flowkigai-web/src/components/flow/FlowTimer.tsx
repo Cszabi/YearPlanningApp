@@ -37,8 +37,8 @@ export default function FlowTimer() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // ── Over-time sine tone ────────────────────────────────────────────────────
-  const overToneCtxRef = useRef<AudioContext | null>(null);
+  // ── Bird chirp at timer zero ───────────────────────────────────────────────
+  const chirpPlayedRef = useRef(false);
 
   // ── Focus music (HTML audio element) ──────────────────────────────────────
   const audioElRef = useRef<HTMLAudioElement | null>(null);
@@ -162,55 +162,46 @@ export default function FlowTimer() {
   const isOverTime   = elapsed > planned;
   const overMins     = isOverTime ? Math.floor((elapsed - planned) / 60) : 0;
   const showVisual   = isOverTime && overTimeMode !== "None";
-  const showTone     = isOverTime && overTimeMode === "VisualAndTone";
   const ringColor    = showVisual ? "#F5A623" : "#0D6E6E";
+
+  function playBirdChirp() {
+    const ctx = new AudioContext();
+    function oneChirp(startTime: number, baseFreq: number) {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(baseFreq, startTime);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.9, startTime + 0.1);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, startTime + 0.2);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.22, startTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
+    }
+    oneChirp(ctx.currentTime + 0.05, 2800);
+    oneChirp(ctx.currentTime + 0.40, 3200);
+    oneChirp(ctx.currentTime + 0.75, 3000);
+    setTimeout(() => ctx.close(), 2000);
+  }
 
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
   const timeLabel = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
-  // Over-time sine tone: 120 Hz with slow LFO (~30 s pulse) — barely audible
+  // One-shot bird chirp when elapsed first crosses the planned limit
   useEffect(() => {
-    if (!showTone || phase !== "running") {
-      if (overToneCtxRef.current) {
-        overToneCtxRef.current.close();
-        overToneCtxRef.current = null;
-      }
+    if (overTimeMode !== "VisualAndTone" || phase !== "running") {
+      if (elapsed < planned) chirpPlayedRef.current = false; // reset if session restarted
       return;
     }
-
-    const ctx = new AudioContext();
-    overToneCtxRef.current = ctx;
-
-    const osc = ctx.createOscillator();
-    osc.type = "sine";
-    osc.frequency.value = 120;
-
-    const lfo = ctx.createOscillator();
-    lfo.type = "sine";
-    lfo.frequency.value = 0.033; // ~30 s per cycle
-
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.03;   // LFO depth
-
-    const mainGain = ctx.createGain();
-    mainGain.gain.value = 0.03;  // Base gain (total max ≈ 0.06)
-
-    lfo.connect(lfoGain);
-    lfoGain.connect(mainGain.gain);
-    osc.connect(mainGain);
-    mainGain.connect(ctx.destination);
-
-    osc.start();
-    lfo.start();
-
-    return () => {
-      osc.stop();
-      lfo.stop();
-      ctx.close();
-      overToneCtxRef.current = null;
-    };
-  }, [showTone, phase]);
+    if (elapsed >= planned && !chirpPlayedRef.current) {
+      chirpPlayedRef.current = true;
+      playBirdChirp();
+    }
+  }, [elapsed, planned, overTimeMode, phase]);
 
   async function handleInterruptConfirm() {
     if (!session || interrupting) return;
@@ -315,7 +306,6 @@ export default function FlowTimer() {
 
       {/* Now-playing strip — only when Focus music was selected */}
       {setup?.ambientSound === "FocusMusic" && <Box sx={{
-        position: "fixed", bottom: 24,
         display: "flex", alignItems: "center", gap: 1.5,
         bgcolor: "background.paper",
         border: 1, borderColor: "divider",

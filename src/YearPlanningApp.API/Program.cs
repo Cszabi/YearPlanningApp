@@ -136,6 +136,10 @@ using (var scope = app.Services.CreateScope())
         "habit-streak-risk",
         job => job.ExecuteAsync(CancellationToken.None),
         Cron.Hourly());
+    recurringJobs.AddOrUpdate<HabitReminderJob>(
+        "habit-reminder",
+        job => job.ExecuteAsync(CancellationToken.None),
+        Cron.Minutely());
     recurringJobs.AddOrUpdate<AnalyticsFlushJob>(
         "analytics-flush",
         job => job.ExecuteAsync(CancellationToken.None),

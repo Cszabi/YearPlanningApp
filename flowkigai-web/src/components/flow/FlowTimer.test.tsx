@@ -57,15 +57,33 @@ window.AudioContext = class {
   createBufferSource() {
     return { connect: vi.fn(), start: vi.fn(), stop: vi.fn(), loop: false, buffer: null };
   }
-  createGain() { return { connect: vi.fn(), gain: { value: 0 } }; }
+  createGain() {
+    return {
+      connect: vi.fn(),
+      gain: {
+        value: 0,
+        setValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+    };
+  }
   createBiquadFilter() {
     return { connect: vi.fn(), type: "", frequency: { value: 0 }, Q: { value: 0 } };
   }
   createOscillator() {
-    return { connect: vi.fn(), start: vi.fn(), stop: vi.fn(), type: "sine", frequency: { value: 0 } };
+    return {
+      connect: vi.fn(), start: vi.fn(), stop: vi.fn(), type: "sine",
+      frequency: {
+        value: 0,
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+    };
   }
   get destination() { return {}; }
   get sampleRate() { return 44100; }
+  get currentTime() { return 0; }
   close() { return Promise.resolve(); }
 } as unknown as typeof AudioContext;
 
@@ -301,5 +319,99 @@ describe("FlowTimer music strip", () => {
     await waitFor(() => {
       expect(screen.getByText(/now playing/i)).toBeInTheDocument();
     });
+  });
+
+  it("music strip renders in the document alongside the control buttons", async () => {
+    mockGetFocusTracks.mockResolvedValue([]);
+    render(<FlowTimer />);
+    await waitFor(() => expect(screen.getByText(/unavailable/i)).toBeInTheDocument());
+    // Both the Pause button and the strip text must be reachable in the same document
+    expect(screen.getByRole("button", { name: /pause/i })).toBeInTheDocument();
+    expect(screen.getByText(/unavailable/i)).toBeInTheDocument();
+  });
+});
+
+// ── Bird chirp at timer zero ────────────────────────────────────────────────────
+describe("FlowTimer bird chirp at timer zero", () => {
+  const PLANNED_SECS = 45 * 60;
+  // Count AudioContext instantiations with a fresh counter per test
+  let audioCtxInstances: number;
+
+  beforeEach(() => {
+    mockGetFocusTracks.mockResolvedValue([]);
+    audioCtxInstances = 0;
+    // Replace AudioContext with a counting stub for this block
+    window.AudioContext = class {
+      constructor() { audioCtxInstances++; }
+      createBuffer() { return { getChannelData: () => new Float32Array() }; }
+      createBufferSource() {
+        return { connect: vi.fn(), start: vi.fn(), stop: vi.fn(), loop: false, buffer: null };
+      }
+      createGain() {
+        return { connect: vi.fn(), gain: { value: 0, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() } };
+      }
+      createBiquadFilter() {
+        return { connect: vi.fn(), type: "", frequency: { value: 0 }, Q: { value: 0 } };
+      }
+      createOscillator() {
+        return { connect: vi.fn(), start: vi.fn(), stop: vi.fn(), type: "sine", frequency: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() } };
+      }
+      get destination() { return {}; }
+      get sampleRate() { return 44100; }
+      get currentTime() { return 0; }
+      close() { return Promise.resolve(); }
+    } as unknown as typeof AudioContext;
+  });
+
+  it("creates AudioContext (plays chirp) when elapsed crosses planned with VisualAndTone", () => {
+    setStoreMock({
+      elapsed: PLANNED_SECS + 1,
+      setup: {
+        plannedMinutes: 45, taskTitle: "", goalTitle: null,
+        sessionIntention: null, ambientSound: "None",
+        overTimeMode: "VisualAndTone",
+      },
+    });
+    render(<FlowTimer />);
+    expect(audioCtxInstances).toBeGreaterThan(0);
+  });
+
+  it("does NOT create AudioContext for chirp when overTimeMode is None", () => {
+    setStoreMock({
+      elapsed: PLANNED_SECS + 1,
+      setup: {
+        plannedMinutes: 45, taskTitle: "", goalTitle: null,
+        sessionIntention: null, ambientSound: "None",
+        overTimeMode: "None",
+      },
+    });
+    render(<FlowTimer />);
+    expect(audioCtxInstances).toBe(0);
+  });
+
+  it("does NOT create AudioContext for chirp when overTimeMode is Visual", () => {
+    setStoreMock({
+      elapsed: PLANNED_SECS + 1,
+      setup: {
+        plannedMinutes: 45, taskTitle: "", goalTitle: null,
+        sessionIntention: null, ambientSound: "None",
+        overTimeMode: "Visual",
+      },
+    });
+    render(<FlowTimer />);
+    expect(audioCtxInstances).toBe(0);
+  });
+
+  it("does NOT play chirp when elapsed is still within planned time", () => {
+    setStoreMock({
+      elapsed: PLANNED_SECS - 10,   // 10 s before the end
+      setup: {
+        plannedMinutes: 45, taskTitle: "", goalTitle: null,
+        sessionIntention: null, ambientSound: "None",
+        overTimeMode: "VisualAndTone",
+      },
+    });
+    render(<FlowTimer />);
+    expect(audioCtxInstances).toBe(0);
   });
 });

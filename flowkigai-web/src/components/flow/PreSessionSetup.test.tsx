@@ -127,3 +127,103 @@ describe("PreSessionSetup — over-time preference", () => {
     });
   });
 });
+
+// ── Tests: custom duration with unit selector ──────────────────────────────────
+describe("PreSessionSetup — custom duration with unit", () => {
+  beforeEach(() => {
+    mockGetGoals.mockResolvedValue([]);
+    mockStart.mockReset();
+    mockConfirmSetup.mockReset();
+  });
+
+  it("renders the min/hr toggle buttons", () => {
+    renderSetup();
+    expect(screen.getByRole("button", { name: "min" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "hr" })).toBeInTheDocument();
+  });
+
+  it("defaults to 'min' unit selected", () => {
+    renderSetup();
+    // The MUI ToggleButton for "min" should have the selected class
+    expect(screen.getByRole("button", { name: "min" })).toHaveClass("Mui-selected");
+    expect(screen.getByRole("button", { name: "hr" })).not.toHaveClass("Mui-selected");
+  });
+
+  it("accepts value of 1 as valid in minutes", async () => {
+    renderSetup();
+    const user = userEvent.setup();
+    const input = screen.getByPlaceholderText(/custom/i);
+    await user.type(input, "1");
+    expect(screen.queryByText(/min\. 1/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /begin session/i })).not.toBeDisabled();
+  });
+
+  it("shows error and disables Begin when custom value is 0", async () => {
+    renderSetup();
+    const user = userEvent.setup();
+    const input = screen.getByPlaceholderText(/custom/i);
+    await user.type(input, "0");
+    expect(await screen.findByText(/min\. 1/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /begin session/i })).toBeDisabled();
+  });
+
+  it("passes plannedMinutes = custom minutes value when unit is min", async () => {
+    mockStart.mockResolvedValue({ ...MOCK_SESSION, plannedMinutes: 20 });
+    renderSetup();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText(/custom/i);
+    await user.type(input, "20");
+    await user.click(screen.getByRole("button", { name: /begin session/i }));
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledWith(
+        expect.objectContaining({ plannedMinutes: 20 }),
+      );
+    });
+  });
+
+  it("passes plannedMinutes = value * 60 when unit is hr", async () => {
+    mockStart.mockResolvedValue({ ...MOCK_SESSION, plannedMinutes: 120 });
+    renderSetup();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "hr" }));
+    const input = screen.getByPlaceholderText(/custom/i);
+    await user.type(input, "2");
+    await user.click(screen.getByRole("button", { name: /begin session/i }));
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledWith(
+        expect.objectContaining({ plannedMinutes: 120 }),
+      );
+    });
+  });
+
+  it("clears custom value when a preset button is clicked", async () => {
+    renderSetup();
+    const user = userEvent.setup();
+
+    const input = screen.getByPlaceholderText(/custom/i);
+    await user.type(input, "30");
+    expect(input).toHaveValue("30");
+
+    await user.click(screen.getByRole("button", { name: /^45m$/i }));
+    expect(input).toHaveValue("");
+  });
+
+  it("uses preset minutes when custom field is empty", async () => {
+    mockStart.mockResolvedValue(MOCK_SESSION);
+    renderSetup();
+    const user = userEvent.setup();
+
+    // Default energy=Medium, preset=45
+    await user.click(screen.getByRole("button", { name: /begin session/i }));
+
+    await waitFor(() => {
+      expect(mockStart).toHaveBeenCalledWith(
+        expect.objectContaining({ plannedMinutes: 45 }),
+      );
+    });
+  });
+});

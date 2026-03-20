@@ -1,8 +1,14 @@
 import { useState } from "react";
+import dayjs, { type Dayjs } from "dayjs";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import {
   Box, Card, CardContent, Chip, Typography, Stack, Button, Tooltip,
+  Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Switch, FormControlLabel,
 } from "@mui/material";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import NotificationsOffIcon from "@mui/icons-material/NotificationsOff";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useQueryClient } from "@tanstack/react-query";
 import { habitApi, type HabitDto } from "@/api/habitApi";
 
@@ -37,6 +43,14 @@ export default function HabitCard({ habit }: Props) {
     const today = todayKey();
     return habit.recentLogs.some((l) => l.loggedDate.slice(0, 10) === today);
   });
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [editNotifOpen, setEditNotifOpen] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(habit.notificationEnabled);
+  const [notifTime, setNotifTime] = useState<Dayjs>(
+    dayjs().hour(habit.reminderHour ?? 8).minute(habit.reminderMinute ?? 0).second(0)
+  );
+  const [savingNotif, setSavingNotif] = useState(false);
 
   const days = last7Days();
   const loggedDates = new Set(habit.recentLogs.map((l) => l.loggedDate.slice(0, 10)));
@@ -55,6 +69,37 @@ export default function HabitCard({ habit }: Props) {
       // silent
     } finally {
       setLogging(false);
+    }
+  }
+
+  async function handleSaveNotif() {
+    setSavingNotif(true);
+    try {
+      await habitApi.updateNotification(
+        habit.id, notifEnabled,
+        notifEnabled ? notifTime.hour() : null,
+        notifEnabled ? notifTime.minute() : null,
+      );
+      queryClient.invalidateQueries({ queryKey: ["habits", YEAR] });
+      setEditNotifOpen(false);
+    } catch {
+      // silent
+    } finally {
+      setSavingNotif(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await habitApi.deleteHabit(habit.id);
+      setDeleteConfirmOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["habits", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    } catch {
+      // silent — leave dialog open so user can retry
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -93,11 +138,27 @@ export default function HabitCard({ habit }: Props) {
         )}
 
         {/* Frequency chip */}
-        <Stack direction="row" gap={0.75} mb={1.5} flexWrap="wrap">
+        <Stack direction="row" gap={0.75} mb={1.5} flexWrap="wrap" alignItems="center">
           <Chip label={FREQ_LABEL[habit.frequency] ?? habit.frequency} size="small" variant="outlined" />
           {loggedToday && (
             <Chip label="Done today ✓" size="small"
               sx={{ bgcolor: "success.light", color: "success.dark", fontWeight: 600 }} />
+          )}
+          {habit.notificationEnabled ? (
+            <Chip
+              size="small"
+              icon={<NotificationsIcon />}
+              label={`${String(habit.reminderHour).padStart(2, "0")}:${String(habit.reminderMinute ?? 0).padStart(2, "0")}`}
+              variant="outlined"
+              sx={{ fontSize: "0.7rem" }}
+              onClick={() => setEditNotifOpen(true)}
+            />
+          ) : (
+            <Tooltip title="Set reminder">
+              <IconButton size="small" onClick={() => setEditNotifOpen(true)}>
+                <NotificationsOffIcon fontSize="small" sx={{ opacity: 0.3 }} />
+              </IconButton>
+            </Tooltip>
           )}
         </Stack>
 
@@ -147,7 +208,66 @@ export default function HabitCard({ habit }: Props) {
             🎉 {habit.celebrationRitual}
           </Typography>
         )}
+
+        {/* Bottom row: delete */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+          <Tooltip title="Delete habit">
+            <IconButton size="small" onClick={() => setDeleteConfirmOpen(true)}
+              sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}>
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </CardContent>
+
+      {/* Delete confirm dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete habit?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            <strong>{habit.title}</strong> and all its logs will be permanently removed. This cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} color="inherit" disabled={deleting}>Cancel</Button>
+          <Button onClick={handleDelete} disabled={deleting} color="error" variant="contained">
+            {deleting ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notification edit dialog */}
+      <Dialog open={editNotifOpen} onClose={() => setEditNotifOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Habit Reminder</DialogTitle>
+        <DialogContent>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={notifEnabled}
+                onChange={e => setNotifEnabled(e.target.checked)}
+              />
+            }
+            label="Enable reminder"
+          />
+          {notifEnabled && (
+            <Box mt={2}>
+              <TimePicker
+                label="Reminder time"
+                value={notifTime}
+                onChange={v => v && setNotifTime(v)}
+                ampm={false}
+                slotProps={{ textField: { size: "small", fullWidth: true } }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditNotifOpen(false)} color="inherit">Cancel</Button>
+          <Button onClick={handleSaveNotif} disabled={savingNotif} variant="contained">
+            {savingNotif ? "Saving…" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }

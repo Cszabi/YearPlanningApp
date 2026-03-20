@@ -20,6 +20,9 @@ export interface HabitDto {
   currentStreak: number;
   longestStreak: number;
   recentLogs: HabitLogDto[];    // last 30 days, sorted ascending
+  notificationEnabled: boolean;
+  reminderHour: number | null;
+  reminderMinute: number | null;
 }
 
 export const habitApi = {
@@ -38,6 +41,9 @@ export const habitApi = {
     trigger?: string;
     celebrationRitual?: string;
     trackingMethod: string;
+    notificationEnabled?: boolean;
+    reminderHour?: number | null;
+    reminderMinute?: number | null;
   }): Promise<HabitDto> => {
     const { data } = await api.post("/habits", body);
     return data.data as HabitDto;
@@ -45,6 +51,19 @@ export const habitApi = {
 
   logHabit: async (id: string, notes?: string): Promise<HabitDto> => {
     const { data } = await api.post(`/habits/${id}/log`, { notes: notes ?? null });
+    return data.data as HabitDto;
+  },
+
+  deleteHabit: async (habitId: string): Promise<void> => {
+    await api.delete(`/habits/${habitId}`);
+  },
+
+  updateNotification: async (habitId: string, enabled: boolean, hour: number | null, minute: number | null): Promise<HabitDto> => {
+    const { data } = await api.patch(`/habits/${habitId}/notification`, {
+      notificationEnabled: enabled,
+      reminderHour: hour,
+      reminderMinute: minute,
+    });
     return data.data as HabitDto;
   },
 };

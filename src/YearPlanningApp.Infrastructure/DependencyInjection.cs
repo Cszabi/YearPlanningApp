@@ -45,6 +45,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IIkigaiThemeExtractionService, IkigaiThemeExtractionService>();
 
+        services.Configure<OpenverseSettings>(configuration.GetSection("Openverse"));
         services.AddMemoryCache();
         services.AddSingleton<IFocusMusicService, OpenverseMusicService>();
 
@@ -64,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<WeeklyReviewReminderJob>();
         services.AddScoped<GoalDeadlineReminderJob>();
         services.AddScoped<HabitStreakRiskJob>();
+        services.AddScoped<HabitReminderJob>();
         services.AddScoped<AnalyticsFlushJob>();
 
         // Redis connection (optional — analytics buffer falls back to direct DB writes if unavailable)
