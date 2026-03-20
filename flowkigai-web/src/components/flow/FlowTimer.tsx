@@ -46,6 +46,8 @@ export default function FlowTimer() {
   const [trackIndex, setTrackIndex] = useState(0);
   const [musicMuted, setMusicMuted] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<FocusTrackDto | null>(null);
+  const [musicLoading, setMusicLoading] = useState(true);
+  const [musicUnavailable, setMusicUnavailable] = useState(false);
 
   // Tick every second while running
   useEffect(() => {
@@ -62,7 +64,12 @@ export default function FlowTimer() {
     musicApi.getFocusTracks().then((t) => {
       setTracks(t);
       setTrackIndex(0);
-    }).catch(() => { /* music is optional, fail silently */ });
+      setMusicUnavailable(t.length === 0);
+    }).catch(() => {
+      setMusicUnavailable(true);
+    }).finally(() => {
+      setMusicLoading(false);
+    });
   }, []);
 
   // Play current track when phase/index/mute changes
@@ -300,44 +307,60 @@ export default function FlowTimer() {
         </Button>
       </Box>
 
-      {/* Now-playing strip — only shown when tracks are loaded */}
-      {tracks.length > 0 && (
-        <Box sx={{
-          position: "fixed", bottom: 24,
-          display: "flex", alignItems: "center", gap: 1.5,
-          bgcolor: "background.paper",
-          border: 1, borderColor: "divider",
-          borderRadius: 4, px: 2, py: 1,
-          maxWidth: 380, width: "90%",
-          boxShadow: 2,
-        }}>
-          <Stack sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.2 }}>
-              {musicMuted ? "Music muted" : "Now playing"}
-            </Typography>
-            {currentTrack && (
-              <Typography variant="body2" fontWeight={600} noWrap>
-                {currentTrack.name}
+      {/* Now-playing strip — always visible */}
+      <Box sx={{
+        position: "fixed", bottom: 24,
+        display: "flex", alignItems: "center", gap: 1.5,
+        bgcolor: "background.paper",
+        border: 1, borderColor: "divider",
+        borderRadius: 4, px: 2, py: 1,
+        maxWidth: 380, width: "90%",
+        boxShadow: 2,
+      }}>
+        <Stack sx={{ flex: 1, minWidth: 0 }}>
+          {musicLoading && (
+            <Typography variant="caption" color="text.disabled">Loading music…</Typography>
+          )}
+          {!musicLoading && musicUnavailable && (
+            <>
+              <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.2 }}>Focus music</Typography>
+              <Typography variant="body2" color="text.disabled" noWrap>Unavailable</Typography>
+              <Typography variant="caption" color="text.disabled" noWrap sx={{ opacity: 0.6 }}>
+                Add a Jamendo API key to enable
               </Typography>
-            )}
-            {currentTrack && (
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {currentTrack.artistName} · CC licensed
+            </>
+          )}
+          {!musicLoading && !musicUnavailable && (
+            <>
+              <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.2 }}>
+                {musicMuted ? "Music muted" : "Now playing"}
               </Typography>
-            )}
-          </Stack>
-          <Tooltip title={musicMuted ? "Unmute music" : "Mute music"}>
-            <IconButton size="small" onClick={() => setMusicMuted((m) => !m)}>
+              {currentTrack && (
+                <Typography variant="body2" fontWeight={600} noWrap>{currentTrack.name}</Typography>
+              )}
+              {currentTrack && (
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {currentTrack.artistName} · CC licensed
+                </Typography>
+              )}
+            </>
+          )}
+        </Stack>
+        <Tooltip title={musicMuted ? "Unmute music" : "Mute music"}>
+          <span>
+            <IconButton size="small" onClick={() => setMusicMuted((m) => !m)} disabled={musicUnavailable || musicLoading}>
               {musicMuted ? <VolumeOffIcon fontSize="small" /> : <VolumeUpIcon fontSize="small" />}
             </IconButton>
-          </Tooltip>
-          <Tooltip title="Skip track">
-            <IconButton size="small" onClick={skipTrack}>
+          </span>
+        </Tooltip>
+        <Tooltip title="Skip track">
+          <span>
+            <IconButton size="small" onClick={skipTrack} disabled={musicUnavailable || musicLoading}>
               <SkipNextIcon fontSize="small" />
             </IconButton>
-          </Tooltip>
-        </Box>
-      )}
+          </span>
+        </Tooltip>
+      </Box>
 
       {/* Interrupt dialog */}
       <Dialog open={interruptOpen} onClose={() => setInterruptOpen(false)} maxWidth="xs" fullWidth>
