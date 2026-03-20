@@ -326,7 +326,7 @@ export default function GoalDetailPage() {
                         />
                         <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
                         <RechartsTooltip
-                          formatter={(val: number) => [`${val}%`, "Progress"]}
+                          formatter={(val) => [`${val}%`, "Progress"]}
                           contentStyle={{ fontSize: 12 }}
                         />
                         <Line
