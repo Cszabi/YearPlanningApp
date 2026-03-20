@@ -45,6 +45,10 @@ public static class DependencyInjection
         });
         services.AddScoped<IIkigaiThemeExtractionService, IkigaiThemeExtractionService>();
 
+        services.AddMemoryCache();
+        services.Configure<JamendoSettings>(configuration.GetSection("Jamendo"));
+        services.AddSingleton<IFocusMusicService, JamendoMusicService>();
+
         // Hangfire with Postgres storage
         services.AddHangfire(cfg => cfg
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

@@ -74,8 +74,8 @@ export const analyticsApi = {
     toDate: string
   ): Promise<PageAnalyticsDto> => {
     const res = await api.get<{ data: PageAnalyticsDto }>(
-      `/analytics/pages/${encodeURIComponent(page)}`,
-      { params: { fromDate, toDate } }
+      `/analytics/pages`,
+      { params: { page, fromDate, toDate } }
     );
     return res.data.data;
   },
