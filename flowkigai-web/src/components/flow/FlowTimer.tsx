@@ -37,6 +37,9 @@ export default function FlowTimer() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
+  // ── Over-time sine tone ────────────────────────────────────────────────────
+  const overToneCtxRef = useRef<AudioContext | null>(null);
+
   // ── Focus music (HTML audio element) ──────────────────────────────────────
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const [tracks, setTracks] = useState<FocusTrackDto[]>([]);
@@ -141,9 +144,60 @@ export default function FlowTimer() {
   const progress = Math.min(elapsed / planned, 1);
   const dashOffset = CIRCUMFERENCE * (1 - progress);
 
+  // ── Over-time state ────────────────────────────────────────────────────────
+  const overTimeMode = setup?.overTimeMode ?? "None";
+  const isOverTime   = elapsed > planned;
+  const overMins     = isOverTime ? Math.floor((elapsed - planned) / 60) : 0;
+  const showVisual   = isOverTime && overTimeMode !== "None";
+  const showTone     = isOverTime && overTimeMode === "VisualAndTone";
+  const ringColor    = showVisual ? "#F5A623" : "#0D6E6E";
+
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
   const timeLabel = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+  // Over-time sine tone: 120 Hz with slow LFO (~30 s pulse) — barely audible
+  useEffect(() => {
+    if (!showTone || phase !== "running") {
+      if (overToneCtxRef.current) {
+        overToneCtxRef.current.close();
+        overToneCtxRef.current = null;
+      }
+      return;
+    }
+
+    const ctx = new AudioContext();
+    overToneCtxRef.current = ctx;
+
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = 120;
+
+    const lfo = ctx.createOscillator();
+    lfo.type = "sine";
+    lfo.frequency.value = 0.033; // ~30 s per cycle
+
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.03;   // LFO depth
+
+    const mainGain = ctx.createGain();
+    mainGain.gain.value = 0.03;  // Base gain (total max ≈ 0.06)
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(mainGain.gain);
+    osc.connect(mainGain);
+    mainGain.connect(ctx.destination);
+
+    osc.start();
+    lfo.start();
+
+    return () => {
+      osc.stop();
+      lfo.stop();
+      ctx.close();
+      overToneCtxRef.current = null;
+    };
+  }, [showTone, phase]);
 
   async function handleInterruptConfirm() {
     if (!session || interrupting) return;
@@ -177,17 +231,26 @@ export default function FlowTimer() {
       />
 
       {/* SVG progress ring */}
-      <Box sx={{ position: "relative", width: 300, height: 300 }}>
+      <Box sx={{
+        position: "relative", width: 300, height: 300,
+        ...(showVisual && {
+          "@keyframes overTimePulse": {
+            "0%, 100%": { opacity: 0.8 },
+            "50%":      { opacity: 1 },
+          },
+          animation: "overTimePulse 4s ease-in-out infinite",
+        }),
+      }}>
         <svg width={300} height={300} style={{ transform: "rotate(-90deg)" }}>
           <circle cx={150} cy={150} r={RING_R}
             fill="none" stroke="currentColor" strokeWidth={10}
             style={{ color: "var(--border)", opacity: 0.3 }} />
           <circle cx={150} cy={150} r={RING_R}
-            fill="none" stroke="#0D6E6E" strokeWidth={10}
+            fill="none" stroke={ringColor} strokeWidth={10}
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={dashOffset}
-            style={{ transition: "stroke-dashoffset 0.8s linear" }} />
+            style={{ transition: "stroke 1.2s ease, stroke-dashoffset 0.8s linear" }} />
         </svg>
 
         <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -197,6 +260,12 @@ export default function FlowTimer() {
           {isPaused && (
             <Typography variant="caption" color="text.disabled" sx={{ letterSpacing: 2, textTransform: "uppercase" }}>
               Paused
+            </Typography>
+          )}
+          {showVisual && (
+            <Typography variant="caption"
+              sx={{ letterSpacing: 1.5, textTransform: "uppercase", color: "#F5A623", opacity: 0.85 }}>
+              {overMins} min over
             </Typography>
           )}
         </Box>

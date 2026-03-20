@@ -16,6 +16,7 @@ export interface SetupConfig {
   plannedMinutes: number;
   energyLevel: string;  // "Deep" | "Medium" | "Shallow"
   ambientSound: string; // "None" | "BrownNoise" | "WhiteNoise" | "Nature"
+  overTimeMode: "None" | "Visual" | "VisualAndTone";
 }
 
 interface FlowTimerState {

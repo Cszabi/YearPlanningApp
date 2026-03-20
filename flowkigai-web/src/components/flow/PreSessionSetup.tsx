@@ -23,6 +23,12 @@ const AMBIENT_OPTIONS = [
   { value: "Nature",     label: "🌿 Nature" },
 ];
 
+const OVERTIME_OPTIONS = [
+  { value: "None",          label: "🔕 Stay silent" },
+  { value: "Visual",        label: "🟡 Visual indicator" },
+  { value: "VisualAndTone", label: "🔔 Visual + soft tone" },
+];
+
 export default function PreSessionSetup() {
   const confirmSetup = useFlowTimerStore((s) => s.confirmSetup);
   const reset = useFlowTimerStore((s) => s.reset);
@@ -33,8 +39,9 @@ export default function PreSessionSetup() {
   const [energyLevel, setEnergyLevel] = useState("Medium");
   const [minutes,     setMinutes]     = useState(45);
   const [customMin,   setCustomMin]   = useState("");
-  const [ambient,     setAmbient]     = useState("None");
-  const [starting,    setStarting]    = useState(false);
+  const [ambient,      setAmbient]      = useState("None");
+  const [overTimeMode, setOverTimeMode] = useState<"None" | "Visual" | "VisualAndTone">("None");
+  const [starting,     setStarting]    = useState(false);
   const [startError,  setStartError]  = useState(false);
 
   const { data: goals = [] } = useQuery({
@@ -70,7 +77,7 @@ export default function PreSessionSetup() {
         taskTitle:        selectedTask?.title ?? "",
         sessionIntention: intention.trim(),
         plannedMinutes:   actualMinutes,
-        energyLevel, ambientSound: ambient,
+        energyLevel, ambientSound: ambient, overTimeMode,
       };
       confirmSetup(config, session);
     } catch {
@@ -186,6 +193,21 @@ export default function PreSessionSetup() {
             <Button key={o.value} size="small"
               variant={ambient === o.value ? "contained" : "outlined"}
               onClick={() => setAmbient(o.value)} sx={{ borderRadius: 3 }}>
+              {o.label}
+            </Button>
+          ))}
+        </Stack>
+
+        {/* Over-time behaviour */}
+        <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: "block", textTransform: "uppercase", letterSpacing: 0.5 }}>
+          When I go over time
+        </Typography>
+        <Stack direction="row" flexWrap="wrap" gap={1} mb={3}>
+          {OVERTIME_OPTIONS.map((o) => (
+            <Button key={o.value} size="small"
+              variant={overTimeMode === o.value ? "contained" : "outlined"}
+              onClick={() => setOverTimeMode(o.value as typeof overTimeMode)}
+              sx={{ borderRadius: 3 }}>
               {o.label}
             </Button>
           ))}
