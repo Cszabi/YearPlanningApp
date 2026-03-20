@@ -61,17 +61,17 @@ public class AnalyticsController : ControllerBase
         );
     }
 
-    /// <summary>GET /api/v1/analytics/pages/{page}?fromDate=&amp;toDate= — admin only</summary>
-    [HttpGet("pages/{page}")]
+    /// <summary>GET /api/v1/analytics/pages?page=...&amp;fromDate=&amp;toDate= — admin only</summary>
+    [HttpGet("pages")]
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> GetPageAnalytics(
-        string page,
+        [FromQuery] string page,
         [FromQuery] DateTimeOffset? fromDate,
         [FromQuery] DateTimeOffset? toDate,
         CancellationToken ct)
     {
-        var from = fromDate ?? DateTimeOffset.UtcNow.AddDays(-30);
-        var to   = toDate   ?? DateTimeOffset.UtcNow;
+        var from = (fromDate ?? DateTimeOffset.UtcNow.AddDays(-30)).ToUniversalTime();
+        var to   = (toDate   ?? DateTimeOffset.UtcNow).ToUniversalTime();
         var result = await _mediator.Send(new GetPageAnalyticsQuery(page, from, to), ct);
         return Ok(Envelope.Success(result));
     }
@@ -85,8 +85,8 @@ public class AnalyticsController : ControllerBase
         [FromQuery] DateTimeOffset? toDate,
         CancellationToken ct)
     {
-        var from = fromDate ?? DateTimeOffset.UtcNow.AddDays(-30);
-        var to   = toDate   ?? DateTimeOffset.UtcNow;
+        var from = (fromDate ?? DateTimeOffset.UtcNow.AddDays(-30)).ToUniversalTime();
+        var to   = (toDate   ?? DateTimeOffset.UtcNow).ToUniversalTime();
         var result = await _mediator.Send(new GetUserJourneyQuery(userId, from, to), ct);
         return Ok(Envelope.Success(result));
     }
