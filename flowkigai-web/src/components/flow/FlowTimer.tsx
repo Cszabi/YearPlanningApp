@@ -59,8 +59,12 @@ export default function FlowTimer() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [phase, tick]);
 
-  // Fetch music playlist once on mount
+  // Fetch music playlist only when "Focus music" was selected at setup
   useEffect(() => {
+    if (setup?.ambientSound !== "FocusMusic") {
+      setMusicLoading(false);
+      return;
+    }
     musicApi.getFocusTracks().then((t) => {
       setTracks(t);
       setTrackIndex(0);
@@ -70,7 +74,8 @@ export default function FlowTimer() {
     }).finally(() => {
       setMusicLoading(false);
     });
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setup?.ambientSound]);
 
   // Play current track when phase/index/mute changes
   const playTrack = useCallback((list: FocusTrackDto[], idx: number, muted: boolean) => {
@@ -98,9 +103,10 @@ export default function FlowTimer() {
   }
 
   // Ambient sound: play while running, stop while paused
+  // "FocusMusic" is handled separately (HTML audio element), not here
   useEffect(() => {
     const sound = setup?.ambientSound ?? "None";
-    if (sound === "None" || phase !== "running") {
+    if (sound === "None" || sound === "FocusMusic" || phase !== "running") {
       sourceRef.current?.stop();
       sourceRef.current = null;
       audioCtxRef.current?.close();
@@ -307,8 +313,8 @@ export default function FlowTimer() {
         </Button>
       </Box>
 
-      {/* Now-playing strip — always visible */}
-      <Box sx={{
+      {/* Now-playing strip — only when Focus music was selected */}
+      {setup?.ambientSound === "FocusMusic" && <Box sx={{
         position: "fixed", bottom: 24,
         display: "flex", alignItems: "center", gap: 1.5,
         bgcolor: "background.paper",
@@ -326,7 +332,7 @@ export default function FlowTimer() {
               <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.2 }}>Focus music</Typography>
               <Typography variant="body2" color="text.disabled" noWrap>Unavailable</Typography>
               <Typography variant="caption" color="text.disabled" noWrap sx={{ opacity: 0.6 }}>
-                Add a Jamendo API key to enable
+                No tracks available right now
               </Typography>
             </>
           )}
@@ -360,7 +366,7 @@ export default function FlowTimer() {
             </IconButton>
           </span>
         </Tooltip>
-      </Box>
+      </Box>}
 
       {/* Interrupt dialog */}
       <Dialog open={interruptOpen} onClose={() => setInterruptOpen(false)} maxWidth="xs" fullWidth>

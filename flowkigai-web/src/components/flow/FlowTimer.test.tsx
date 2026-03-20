@@ -235,7 +235,13 @@ describe("FlowTimer over-time visual indicator", () => {
 describe("FlowTimer music strip", () => {
   beforeEach(() => {
     mockGetFocusTracks.mockReset();
-    setStoreMock();
+    // Strip only renders when ambientSound === "FocusMusic"
+    setStoreMock({
+      setup: {
+        plannedMinutes: 45, taskTitle: "Test task", goalTitle: null,
+        sessionIntention: null, ambientSound: "FocusMusic", overTimeMode: "None",
+      },
+    });
   });
 
   it("shows loading state before fetch resolves", () => {

@@ -17,10 +17,11 @@ const ENERGY_PRESETS: Record<string, number[]> = {
 };
 
 const AMBIENT_OPTIONS = [
-  { value: "None",       label: "🔇 Silence" },
-  { value: "BrownNoise", label: "🟤 Brown noise" },
-  { value: "WhiteNoise", label: "⚪ White noise" },
-  { value: "Nature",     label: "🌿 Nature" },
+  { value: "None",        label: "🔇 Silence" },
+  { value: "BrownNoise",  label: "🟤 Brown noise" },
+  { value: "WhiteNoise",  label: "⚪ White noise" },
+  { value: "Nature",      label: "🌿 Nature" },
+  { value: "FocusMusic",  label: "🎵 Focus music" },
 ];
 
 const OVERTIME_OPTIONS = [
@@ -184,9 +185,9 @@ export default function PreSessionSetup() {
           />
         </Stack>
 
-        {/* Ambient sound */}
+        {/* Sounds */}
         <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ mb: 0.75, display: "block", textTransform: "uppercase", letterSpacing: 0.5 }}>
-          Ambient sound
+          Sounds
         </Typography>
         <Stack direction="row" flexWrap="wrap" gap={1} mb={3}>
           {AMBIENT_OPTIONS.map((o) => (
