@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flowkigai-v1';
+const CACHE_NAME = 'flowkigai-v2';
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
@@ -37,7 +37,11 @@ self.addEventListener('fetch', (event) => {
   // and stale JS modules are never served from cache.
   if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return;
 
-  // API calls → NetworkFirst with cache fallback
+  // Non-GET API requests (POST, PATCH, PUT, DELETE) — pass through directly,
+  // never cache mutations and never intercept with SW fallback logic.
+  if (url.pathname.startsWith('/api/') && request.method !== 'GET') return;
+
+  // API GET calls → NetworkFirst with cache fallback
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request));
     return;
@@ -55,7 +59,11 @@ self.addEventListener('fetch', (event) => {
   // Navigation requests (HTML) → NetworkFirst, offline fallback
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/offline.html'))
+      fetch(request).catch(() =>
+        caches.match('/offline.html')
+          .then((r) => r ?? caches.match('/'))
+          .then((r) => r ?? Response.error())
+      )
     );
     return;
   }

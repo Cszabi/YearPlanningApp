@@ -31,6 +31,7 @@ const mockConfig: SetupConfig = {
   plannedMinutes: 25,
   energyLevel: "Deep",
   ambientSound: "None",
+  overTimeMode: "None",
 };
 
 describe("flowTimerStore", () => {

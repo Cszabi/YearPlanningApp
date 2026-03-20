@@ -30,7 +30,7 @@ const MOCK_SESSION = { id: "sess-1" };
 
 // FlowTimer calls useFlowTimerStore() with no selector — return state object directly
 function setStoreMock(overrides: object = {}) {
-  (useFlowTimerStore as ReturnType<typeof vi.fn>).mockReturnValue({
+  (useFlowTimerStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
     phase: "running",
     elapsed: 600,           // 10 min elapsed, well within 45 min planned
     session: MOCK_SESSION,

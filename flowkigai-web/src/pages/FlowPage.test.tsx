@@ -47,7 +47,7 @@ const MOCK_SESSION = {
 
 // FlowPage calls useFlowTimerStore() with no selector — return state object directly
 function setStoreMock(phase: string) {
-  (useFlowTimerStore as ReturnType<typeof vi.fn>).mockReturnValue({
+  (useFlowTimerStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
     phase,
     restoreRunning: mockRestoreRunning,
     reset: mockReset,
