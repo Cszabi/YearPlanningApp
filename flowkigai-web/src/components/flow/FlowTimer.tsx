@@ -6,12 +6,28 @@ import { flowSessionApi } from "@/api/flowSessionApi";
 const RING_R = 120;
 const CIRCUMFERENCE = 2 * Math.PI * RING_R;
 
+function fillNoise(data: Float32Array, type: "white" | "brown" | "nature") {
+  if (type === "white" || type === "nature") {
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  } else {
+    // Brown noise: integrate white noise
+    let last = 0;
+    for (let i = 0; i < data.length; i++) {
+      const w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      data[i] = last * 3.5;
+    }
+  }
+}
+
 export default function FlowTimer() {
   const { phase, elapsed, session, setup, tick, pause, resume, beginMicroReview, reset } = useFlowTimerStore();
   const [interruptOpen, setInterruptOpen] = useState(false);
   const [interruptReason, setInterruptReason] = useState("");
   const [interrupting, setInterrupting] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Tick every second while running
   useEffect(() => {
@@ -22,6 +38,57 @@ export default function FlowTimer() {
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [phase, tick]);
+
+  // Ambient sound: play while running, stop while paused
+  useEffect(() => {
+    const sound = setup?.ambientSound ?? "None";
+    if (sound === "None" || phase !== "running") {
+      sourceRef.current?.stop();
+      sourceRef.current = null;
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      return;
+    }
+
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+
+    const bufferSize = 2 * ctx.sampleRate;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    const noiseType = sound === "BrownNoise" ? "brown" : sound === "Nature" ? "nature" : "white";
+    fillNoise(data, noiseType);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0.25;
+
+    if (sound === "Nature") {
+      // Lowpass filter for rain-like character
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 800;
+      filter.Q.value = 0.5;
+      source.connect(filter);
+      filter.connect(gain);
+    } else {
+      source.connect(gain);
+    }
+    gain.connect(ctx.destination);
+    source.start();
+    sourceRef.current = source;
+
+    return () => {
+      source.stop();
+      ctx.close();
+      sourceRef.current = null;
+      audioCtxRef.current = null;
+    };
+  }, [phase, setup?.ambientSound]);
 
   const planned = (setup?.plannedMinutes ?? 45) * 60;
   const progress = Math.min(elapsed / planned, 1);

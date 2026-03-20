@@ -58,6 +58,28 @@ public class FlowSessionsController : ControllerBase
             session => CreatedAtAction(nameof(GetActive), Envelope.Success(session)),
             error => (IActionResult)BadRequest(Envelope.ValidationError(error)));
     }
+
+    // PATCH /api/v1/flow-sessions/{id}/complete
+    [HttpPatch("{id:guid}/complete")]
+    public async Task<IActionResult> CompleteSession(Guid id, [FromBody] CompleteSessionRequest body, CancellationToken ct)
+    {
+        var result = await _mediator.Send(
+            new CompleteFlowSessionCommand(id, body.Outcome, body.FlowQualityRating, body.EnergyAfterRating, body.Blockers), ct);
+        return result.Match(
+            session => (IActionResult)Ok(Envelope.Success(session)),
+            notFound => NotFound(Envelope.NotFound(notFound)),
+            error => BadRequest(Envelope.ValidationError(error)));
+    }
+
+    // PATCH /api/v1/flow-sessions/{id}/interrupt
+    [HttpPatch("{id:guid}/interrupt")]
+    public async Task<IActionResult> InterruptSession(Guid id, [FromBody] InterruptSessionRequest body, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new InterruptFlowSessionCommand(id, body.InterruptionReason), ct);
+        return result.Match(
+            session => (IActionResult)Ok(Envelope.Success(session)),
+            notFound => NotFound(Envelope.NotFound(notFound)));
+    }
 }
 
 // ── Request models ────────────────────────────────────────────────────────────
@@ -68,3 +90,11 @@ public record CreateFlowSessionRequest(
     int PlannedMinutes,
     string EnergyLevel,
     string AmbientSound);
+
+public record CompleteSessionRequest(
+    string Outcome,
+    int FlowQualityRating,
+    int EnergyAfterRating,
+    string? Blockers);
+
+public record InterruptSessionRequest(string? InterruptionReason);
