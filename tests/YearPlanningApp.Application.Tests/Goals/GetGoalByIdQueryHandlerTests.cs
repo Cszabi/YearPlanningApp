@@ -30,18 +30,18 @@ public class GetGoalByIdQueryHandlerTests
     };
 
     [Fact]
-    public async Task Handle_ShouldReturnGoalWithProgress_WhenGoalExists()
+    public async Task Handle_ShouldReturnGoalWithProgressPercent_WhenGoalExists()
     {
         var goal = BuildGoal();
+        goal.ProgressPercent = 75;
         _uow.Goals.GetByUserAndYearAsync(_userId, 2026, Arg.Any<CancellationToken>())
             .Returns(new[] { goal });
-        _uow.Goals.CalculateGoalProgressAsync(goal.Id, Arg.Any<CancellationToken>()).Returns(75.0);
 
         var result = await _handler.Handle(new GetGoalByIdQuery(goal.Id, 2026), CancellationToken.None);
 
         result.IsT0.ShouldBeTrue();
         result.AsT0.Title.ShouldBe("My Goal");
-        result.AsT0.Progress.ShouldBe(75.0);
+        result.AsT0.ProgressPercent.ShouldBe(75);
     }
 
     [Fact]

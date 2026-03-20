@@ -4,7 +4,7 @@ import {
   Button, Snackbar, Alert, Tooltip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { goalApi, GoalDto } from "@/api/goalApi";
+import { goalApi, type GoalDto } from "@/api/goalApi";
 import { useMutation } from "@tanstack/react-query";
 
 interface GoalProgressBarProps {
@@ -75,7 +75,7 @@ export default function GoalProgressBar({
           </Typography>
           {editable && !editing && (
             <Tooltip title="Update progress">
-              <IconButton size="small" onClick={handleEdit} sx={{ p: 0.25 }}>
+              <IconButton size="small" onClick={handleEdit} sx={{ p: 0.25 }} aria-label="Update progress">
                 <EditIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Tooltip>
