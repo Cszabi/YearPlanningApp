@@ -96,6 +96,9 @@ export default function GoalDetailPage() {
   const [editingMilestoneTitle, setEditingMilestoneTitle] = useState("");
   const [addingTaskTo, setAddingTaskTo] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [addingMilestone, setAddingMilestone] = useState(false);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState("");
+  const [newMilestoneDeadline, setNewMilestoneDeadline] = useState("");
 
   if (isLoading) return (
     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", bgcolor: "background.default" }}>
@@ -209,6 +212,20 @@ export default function GoalDetailPage() {
     await goalApi.createTask(goal.id, milestoneId, { year: YEAR, title: newTaskTitle.trim(), energyLevel: "Shallow", isNextAction: false }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
     setNewTaskTitle("");
+  }
+
+  async function addMilestone() {
+    if (!goal || !newMilestoneTitle.trim() || !newMilestoneDeadline) return;
+    await goalApi.createMilestone(goal.id, {
+      year: YEAR,
+      title: newMilestoneTitle.trim(),
+      targetDate: newMilestoneDeadline,
+      orderIndex: goal.milestones.length,
+    }).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    setAddingMilestone(false);
+    setNewMilestoneTitle("");
+    setNewMilestoneDeadline("");
   }
 
   type SmartKey = "specific" | "measurable" | "achievable" | "relevant";
@@ -534,10 +551,50 @@ export default function GoalDetailPage() {
         {/* Tab 2 — Tasks & Milestones */}
         {tab === 2 && (
           <Stack spacing={3}>
-            {goal.milestones.length === 0 && (
-              <Typography variant="body2" color="text.secondary">
-                No milestones yet. Create one from the Goals page.
-              </Typography>
+            {goal.milestones.length === 0 && !addingMilestone && (
+              <Stack spacing={1}>
+                <Typography variant="body2" color="text.secondary">
+                  No milestones yet. Add one to start organising tasks.
+                </Typography>
+                <Button
+                  size="small" startIcon={<AddIcon />}
+                  onClick={() => setAddingMilestone(true)}
+                  sx={{ alignSelf: "flex-start", borderRadius: 2 }}
+                >
+                  Add milestone
+                </Button>
+              </Stack>
+            )}
+            {addingMilestone && (
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <TextField
+                  autoFocus size="small" placeholder="Milestone name" sx={{ flex: 1 }}
+                  value={newMilestoneTitle}
+                  onChange={(e) => setNewMilestoneTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") addMilestone();
+                    if (e.key === "Escape") { setAddingMilestone(false); setNewMilestoneTitle(""); setNewMilestoneDeadline(""); }
+                  }}
+                />
+                <TextField
+                  size="small" type="date" label="Deadline"
+                  value={newMilestoneDeadline}
+                  onChange={(e) => setNewMilestoneDeadline(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ width: 160 }}
+                />
+                <Button
+                  size="small" variant="contained"
+                  onClick={addMilestone}
+                  disabled={!newMilestoneTitle.trim() || !newMilestoneDeadline}
+                  sx={{ borderRadius: 2 }}
+                >Add</Button>
+                <Button
+                  size="small"
+                  onClick={() => { setAddingMilestone(false); setNewMilestoneTitle(""); setNewMilestoneDeadline(""); }}
+                  sx={{ borderRadius: 2 }}
+                >Cancel</Button>
+              </Stack>
             )}
             {goal.milestones.map((ms) => (
               <Box key={ms.id}>
@@ -639,6 +696,15 @@ export default function GoalDetailPage() {
                 <Divider sx={{ mt: 2 }} />
               </Box>
             ))}
+            {goal.milestones.length > 0 && !addingMilestone && (
+              <Button
+                size="small" startIcon={<AddIcon />}
+                onClick={() => setAddingMilestone(true)}
+                sx={{ alignSelf: "flex-start", borderRadius: 2 }}
+              >
+                Add milestone
+              </Button>
+            )}
           </Stack>
         )}
 

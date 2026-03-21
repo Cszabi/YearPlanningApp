@@ -32,20 +32,20 @@ export function getFocusColor(node: MindMapNodeDto): string {
     case "Dropped":  return "#9CA3AF"; // grey
     case "Paused":   return "#F5A623"; // amber
     default: { // Active
-      // No tasks and no milestones = no progress data → treat as "no data"
-      if (node.taskCount === 0 && !node.hasMilestones) return "#9CA3AF";
       if (node.goalTargetDate) {
         const daysLeft = Math.ceil((new Date(node.goalTargetDate).getTime() - Date.now()) / 86400000);
-        if (daysLeft <= 30) return "#E8705A"; // coral = at risk
+        if (daysLeft < 0)   return "#EF4444"; // red   = overdue
+        if (daysLeft <= 30) return "#E8705A"; // coral = due soon
       }
-      return "#0D6E6E"; // teal = on track
+      return "#0D6E6E"; // teal = active
     }
   }
 }
 
 export const FOCUS_LEGEND = [
-  { color: "#0D6E6E", label: "Active – on track" },
+  { color: "#EF4444", label: "Overdue" },
   { color: "#E8705A", label: "Active – due ≤30 days" },
+  { color: "#0D6E6E", label: "Active" },
   { color: "#F5A623", label: "Paused" },
   { color: "#10B981", label: "Achieved" },
   { color: "#9CA3AF", label: "Dropped / no data" },
@@ -53,7 +53,7 @@ export const FOCUS_LEGEND = [
 
 // Priority order for aggregating child goal colours onto parent nodes
 // (most urgent first — first match wins)
-const FOCUS_COLOR_PRIORITY = ["#E8705A", "#F5A623", "#0D6E6E", "#10B981", "#9CA3AF"];
+const FOCUS_COLOR_PRIORITY = ["#EF4444", "#E8705A", "#F5A623", "#0D6E6E", "#10B981", "#9CA3AF"];
 
 /**
  * Builds a Map<nodeId, focusColor> for every node in the list.
@@ -80,10 +80,14 @@ export function buildFocusColorMap(nodes: MindMapNodeDto[]): Map<string, string>
     if (n.nodeType === "Goal") {
       result = getFocusColor(n);
     } else {
-      const childColors = (childrenMap.get(id) ?? [])
-        .map(worstGoalColor)
-        .filter(Boolean) as string[];
-      result = FOCUS_COLOR_PRIORITY.find((c) => childColors.includes(c)) ?? null;
+      const children = childrenMap.get(id) ?? [];
+      if (children.length === 0) {
+        // Leaf node not converted to a goal → "no data" grey
+        result = "#9CA3AF";
+      } else {
+        const childColors = children.map(worstGoalColor).filter(Boolean) as string[];
+        result = FOCUS_COLOR_PRIORITY.find((c) => childColors.includes(c)) ?? null;
+      }
     }
     cache.set(id, result);
     return result;

@@ -213,7 +213,6 @@ export default function IkigaiJourney() {
       setSavingValues(false);
     }
     setPhase("journey-complete");
-    setTimeout(() => navigate("/ikigai/complete", { replace: true }), 2500);
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -354,6 +353,13 @@ export default function IkigaiJourney() {
               size="medium"
             />
           )}
+          <button
+            onClick={() => navigate("/ikigai/complete", { replace: true })}
+            className="mt-8 px-8 py-3 rounded-full text-white text-sm font-medium transition-opacity"
+            style={{ backgroundColor: "#0D6E6E" }}
+          >
+            Continue →
+          </button>
         </div>
       </div>
     );

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useTheme } from "@mui/material/styles";
 import type { MindMapNodeDto } from "@/api/mindMapApi";
 import { LIFE_AREA_COLORS } from "./nodes";
 import { runForceLayout } from "./forceDirectedLayout";
@@ -82,6 +83,11 @@ export default function ForceDirectedView({
   focusMode = false,
   focusColorMap,
 }: ForceDirectedViewProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const labelFill   = isDark ? "#FFFFFF" : "#374151";
+  const labelStroke = isDark ? "rgba(0,0,0,0.55)" : "none";
+
   // Run simulation synchronously — result memoised until nodes change
   const positions = useMemo(() => runForceLayout(nodes), [nodes]);
   const nodeInfo = useMemo(() => computeNodeInfo(nodes), [nodes]);
@@ -203,7 +209,10 @@ export default function ForceDirectedView({
                 dominantBaseline="middle"
                 fontSize={15}
                 fontWeight={info?.depth === 1 ? 600 : 400}
-                fill="#374151"
+                fill={labelFill}
+                stroke={labelStroke}
+                strokeWidth={isDark ? 3 : 0}
+                paintOrder="stroke fill"
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
                 {truncate(labelText, 22)}

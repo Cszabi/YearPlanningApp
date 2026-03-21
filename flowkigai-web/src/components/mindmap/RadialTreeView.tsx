@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import type { HierarchyPointNode } from "d3";
+import { useTheme } from "@mui/material/styles";
 import type { MindMapNodeDto } from "@/api/mindMapApi";
 import { LIFE_AREA_COLORS } from "./nodes";
 
@@ -91,6 +92,10 @@ export default function RadialTreeView({
   focusMode = false,
   focusColorMap,
 }: RadialTreeViewProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const labelFill   = isDark ? "#FFFFFF" : "#374151";
+  const labelStroke = isDark ? "rgba(0,0,0,0.55)" : "none";
   const root = useMemo(() => buildRadialTree(nodes), [nodes]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,7 +187,10 @@ export default function RadialTreeView({
                   transform={flipLabel ? "rotate(180)" : undefined}
                   fontSize={15}
                   fontWeight={d.depth === 1 ? 600 : 400}
-                  fill="#374151"
+                  fill={labelFill}
+                  stroke={labelStroke}
+                  strokeWidth={isDark ? 3 : 0}
+                  paintOrder="stroke fill"
                   style={{ pointerEvents: "none", userSelect: "none" }}
                 >
                   {label}

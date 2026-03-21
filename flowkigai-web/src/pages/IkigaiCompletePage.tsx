@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
-import Snackbar from "@mui/material/Snackbar";
 import { ikigaiApi } from "@/api/ikigaiApi";
 import { useIkigaiStore } from "@/stores/ikigaiStore";
 import NorthStarIllustration from "@/components/ikigai/NorthStarIllustration";
@@ -17,7 +16,7 @@ export default function IkigaiCompletePage() {
   const navigate = useNavigate();
   const setExtractedThemes = useIkigaiStore((s) => s.setExtractedThemes);
   const [extracting, setExtracting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [extractError, setExtractError] = useState(false);
 
   const { data: journey, isLoading } = useQuery({
     queryKey: ["ikigaiJourney", YEAR],
@@ -30,29 +29,24 @@ export default function IkigaiCompletePage() {
       }
     },
     staleTime: Infinity,
+    refetchOnMount: "always", // always get fresh data — cache may be stale after journey completion
   });
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (!journey || !journey.northStar) {
-      navigate("/ikigai", { replace: true });
-    }
-  }, [isLoading, journey, navigate]);
 
   async function handleBuildMindMap() {
     setExtracting(true);
+    setExtractError(false);
     try {
       const result = await ikigaiApi.extractThemes(YEAR);
       setExtractedThemes(result);
       navigate("/ikigai/seed");
     } catch {
-      setErrorMsg("Could not extract themes. Please try again.");
+      setExtractError(true);
     } finally {
       setExtracting(false);
     }
   }
 
-  if (isLoading || !journey) {
+  if (isLoading) {
     return (
       <div
         className="h-full flex items-center justify-center"
@@ -82,13 +76,38 @@ export default function IkigaiCompletePage() {
           Your North Star
         </p>
 
-        {journey.northStar && (
+        {journey?.northStar ? (
           <p
-            className="text-2xl md:text-3xl font-light max-w-lg leading-relaxed mb-10"
+            className="text-2xl md:text-3xl font-light max-w-lg leading-relaxed mb-4"
             style={{ fontFamily: "Georgia, serif", color: "var(--text-primary)" }}
           >
             {journey.northStar.statement}
           </p>
+        ) : (
+          <p
+            className="text-lg font-light max-w-lg leading-relaxed mb-4 italic"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Your Ikigai journey is complete.
+          </p>
+        )}
+
+        <p className="text-sm max-w-sm mb-8" style={{ color: "var(--text-muted)" }}>
+          Click <strong>Build my Mind Map</strong> and AI will read your Ikigai answers,
+          extract key themes, and place them on your Mind Map as a starting point.
+          You can review and edit the themes before they are applied.
+        </p>
+
+        {extractError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3, textAlign: "left", maxWidth: 400 }}
+          >
+            <strong>AI couldn't extract your themes.</strong>
+            <br />
+            This can happen if the AI service is temporarily unavailable. You
+            can try again, or skip and build your Mind Map manually.
+          </Alert>
         )}
 
         <button
@@ -98,7 +117,7 @@ export default function IkigaiCompletePage() {
           style={{ backgroundColor: "#0D6E6E" }}
         >
           {extracting && <CircularProgress size={16} style={{ color: "white" }} />}
-          {extracting ? "Extracting themes…" : "Build my mind map"}
+          {extracting ? "Extracting themes…" : extractError ? "Try again →" : "Build my Mind Map →"}
         </button>
 
         <button
@@ -106,20 +125,9 @@ export default function IkigaiCompletePage() {
           className="text-sm transition-colors"
           style={{ color: "var(--text-faint)" }}
         >
-          Start from scratch →
+          Skip — go to Mind Map directly
         </button>
       </div>
-
-      <Snackbar
-        open={errorMsg !== null}
-        autoHideDuration={5000}
-        onClose={() => setErrorMsg(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert severity="error" onClose={() => setErrorMsg(null)}>
-          {errorMsg}
-        </Alert>
-      </Snackbar>
     </div>
   );
 }

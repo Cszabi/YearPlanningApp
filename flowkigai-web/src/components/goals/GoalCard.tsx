@@ -107,76 +107,6 @@ function AddTaskForm({ goalId, milestone, onDone }: AddTaskFormProps) {
 }
 
 
-// ── First-task form: creates milestone + task in one shot ─────────────────────
-
-interface AddFirstTaskFormProps {
-  goalId: string;
-  onDone: () => void;
-}
-
-function AddFirstTaskForm({ goalId, onDone }: AddFirstTaskFormProps) {
-  const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
-
-  const canSubmit = title.trim().length > 0 && deadline.length > 0 && !saving;
-
-  async function submit() {
-    if (!canSubmit) return;
-    setSaving(true);
-    setError(false);
-    try {
-      const ms = await goalApi.createMilestone(goalId, { year: YEAR, title: "Steps", targetDate: deadline, orderIndex: 0 });
-      await goalApi.createTask(goalId, ms.id, { year: YEAR, title: title.trim(), energyLevel: "Shallow", isNextAction: false });
-      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
-      onDone();
-    } catch {
-      setError(true);
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Box sx={{ mt: 0.5 }}>
-      <Stack direction="row" alignItems="center" gap={0.75} sx={{ pr: 0.5, py: 0.5 }}>
-        <TextField
-          autoFocus
-          size="small"
-          placeholder="What's the first step?"
-          value={title}
-          onChange={(e) => { setTitle(e.target.value); setError(false); }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") submit();
-            if (e.key === "Escape") onDone();
-          }}
-          error={error}
-          helperText={error ? "Failed to save — is the backend running?" : undefined}
-          sx={{ flex: 1, "& .MuiInputBase-input": { py: 0.5, fontSize: "0.875rem" } }}
-          disabled={saving}
-        />
-        <TextField
-          size="small"
-          type="date"
-          label="Deadline"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          sx={{ width: 148, "& .MuiInputBase-input": { py: 0.5, fontSize: "0.8rem" } }}
-          disabled={saving}
-        />
-        <IconButton size="small" color="primary" onClick={submit} disabled={!canSubmit}>
-          {saving ? <CircularProgress size={14} /> : <CheckIcon fontSize="small" />}
-        </IconButton>
-        <IconButton size="small" onClick={onDone} disabled={saving}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </Stack>
-    </Box>
-  );
-}
-
 // ── Inline add-milestone form ─────────────────────────────────────────────────
 
 interface AddMilestoneFormProps {
@@ -255,7 +185,6 @@ export default function GoalCard({ goal }: Props) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [addingTaskTo, setAddingTaskTo] = useState<string | null>(null);
   const [addingMilestone, setAddingMilestone] = useState(false);
-  const [addingFirstTask, setAddingFirstTask] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
 
   // Edit/delete task state
@@ -510,22 +439,28 @@ export default function GoalCard({ goal }: Props) {
 
           {/* ── Tasks section ──────────────────────────────────────────────── */}
 
-          {/* No milestones yet */}
+          {/* No milestones yet — require a milestone before tasks */}
           {!hasMilestones && (
-            addingFirstTask ? (
-              <AddFirstTaskForm
+            addingMilestone ? (
+              <AddMilestoneForm
                 goalId={goal.id}
-                onDone={() => setAddingFirstTask(false)}
+                nextOrderIndex={0}
+                onDone={() => setAddingMilestone(false)}
               />
             ) : (
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setAddingFirstTask(true)}
-                sx={{ fontSize: "0.8rem", color: "text.secondary" }}
-              >
-                Add first task
-              </Button>
+              <Stack spacing={0.25}>
+                <Typography variant="caption" color="text.disabled">
+                  Tasks are organised under milestones.
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => setAddingMilestone(true)}
+                  sx={{ fontSize: "0.8rem", color: "text.secondary", alignSelf: "flex-start" }}
+                >
+                  Add milestone
+                </Button>
+              </Stack>
             )
           )}
 
