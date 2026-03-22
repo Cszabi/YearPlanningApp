@@ -18,6 +18,8 @@ public class User : BaseEntity
     public DateTime? EmailVerificationTokenExpiresAt { get; set; }
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
+    public OnboardingStatus OnboardingStatus { get; set; } = OnboardingStatus.NotStarted;
+    public DateTimeOffset? OnboardingCompletedAt { get; set; }
     public ICollection<IkigaiJourney> IkigaiJourneys { get; set; } = new List<IkigaiJourney>();
     public ICollection<Goal> Goals { get; set; } = new List<Goal>();
     public ICollection<FlowSession> FlowSessions { get; set; } = new List<FlowSession>();

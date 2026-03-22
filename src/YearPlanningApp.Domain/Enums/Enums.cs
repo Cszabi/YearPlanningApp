@@ -29,4 +29,6 @@ public enum ReviewType { Weekly = 1, Monthly = 2, Quarterly = 3, Annual = 4 }
 public enum UserRole { User = 0, Admin = 1 }
 public enum UserPlan { Free = 0, Pro = 1 }
 
+public enum OnboardingStatus { NotStarted = 0, InProgress = 1, Completed = 2, Skipped = 3 }
+
 public enum PageExitType { Navigated = 0, Closed = 1, Idle = 2, Unknown = 3 }

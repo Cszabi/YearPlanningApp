@@ -39,6 +39,11 @@ public class AppDbContext : DbContext
             .Property(u => u.IsEmailVerified)
             .HasDefaultValue(true);
 
+        // ── Onboarding: existing rows skip onboarding; new registrations start at NotStarted ──
+        modelBuilder.Entity<User>()
+            .Property(u => u.OnboardingStatus)
+            .HasDefaultValue(OnboardingStatus.Skipped);
+
         // ── Soft delete query filters ──────────────────────────────────────
         modelBuilder.Entity<User>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<IkigaiJourney>().HasQueryFilter(e => e.DeletedAt == null);
