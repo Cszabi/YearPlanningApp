@@ -95,6 +95,25 @@ public class AuthController : ControllerBase
             error => BadRequest(Envelope.ValidationError(error))
         );
     }
+
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new VerifyEmailCommand(token), ct);
+        return result.Match(
+            _ => (IActionResult)Ok(Envelope.Success<object?>(null)),
+            _ => NotFound(Envelope.Error("Verification link not found or expired.", "TOKEN_INVALID"))
+        );
+    }
+
+    [HttpPost("resend-verification")]
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResendVerification(CancellationToken ct)
+    {
+        await _mediator.Send(new ResendVerificationEmailCommand(), ct);
+        return Ok(Envelope.Success<object?>(null));
+    }
 }
 
 public record LogoutRequest(string RefreshToken);
