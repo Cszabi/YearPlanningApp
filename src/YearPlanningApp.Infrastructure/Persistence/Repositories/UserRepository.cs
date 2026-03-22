@@ -14,6 +14,9 @@ public class UserRepository : BaseRepository<User>, IUserRepository
     public async Task<User?> GetByRefreshTokenAsync(string hashedToken, CancellationToken ct = default)
         => await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == hashedToken, ct);
 
+    public async Task<User?> GetByEmailVerificationTokenHashAsync(string tokenHash, CancellationToken ct = default)
+        => await _context.Users.FirstOrDefaultAsync(u => u.EmailVerificationTokenHash == tokenHash, ct);
+
     public async Task<User?> GetByPasswordResetTokenHashAsync(string tokenHash, CancellationToken ct = default)
         => await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetTokenHash == tokenHash, ct);
 

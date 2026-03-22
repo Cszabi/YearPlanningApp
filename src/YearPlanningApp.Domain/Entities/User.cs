@@ -13,6 +13,9 @@ public class User : BaseEntity
     public string? CalendarProvider { get; set; }  // "google" | "outlook" | null
     public UserRole Role { get; set; } = UserRole.User;
     public UserPlan Plan { get; set; } = UserPlan.Free;
+    public bool IsEmailVerified { get; set; } = false;
+    public string? EmailVerificationTokenHash { get; set; }
+    public DateTime? EmailVerificationTokenExpiresAt { get; set; }
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public ICollection<IkigaiJourney> IkigaiJourneys { get; set; } = new List<IkigaiJourney>();

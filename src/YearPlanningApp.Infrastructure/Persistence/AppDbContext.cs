@@ -34,6 +34,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // ── Email verification: existing rows get true; new registrations set false explicitly ──
+        modelBuilder.Entity<User>()
+            .Property(u => u.IsEmailVerified)
+            .HasDefaultValue(true);
+
         // ── Soft delete query filters ──────────────────────────────────────
         modelBuilder.Entity<User>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<IkigaiJourney>().HasQueryFilter(e => e.DeletedAt == null);
