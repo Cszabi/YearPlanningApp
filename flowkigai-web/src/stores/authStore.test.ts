@@ -7,6 +7,7 @@ const mockUser = {
   displayName: "Test User",
   role: "User" as const,
   plan: "Free" as const,
+  isEmailVerified: true,
 };
 
 describe("authStore", () => {

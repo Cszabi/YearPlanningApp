@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet, Navigate, useLocation } from "react-router-dom";
 import {
-  Box, Typography, Tooltip, IconButton,
+  Box, Typography, Tooltip, IconButton, Button,
   List, ListItemButton, ListItemIcon, ListItemText, Divider,
   Drawer, useMediaQuery,
 } from "@mui/material";
@@ -14,6 +14,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/context/ThemeContext";
+import { authApi } from "@/api/authApi";
 import DeleteAccountDialog from "./DeleteAccountDialog";
 import FlowkigaiLogo from "./FlowkigaiLogo";
 
@@ -37,7 +38,18 @@ export default function TabNav() {
   const location = useLocation();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [resending, setResending] = useState(false);
   const isMobile = useMediaQuery("(max-width: 600px)");
+
+  async function handleResend() {
+    setResending(true);
+    try {
+      await authApi.resendVerification();
+    } finally {
+      setResending(false);
+    }
+  }
 
   if (!user) return <Navigate to="/" replace />;
 
@@ -205,8 +217,40 @@ export default function TabNav() {
       <DeleteAccountDialog open={deleteOpen} onClose={() => setDeleteOpen(false)} />
 
       {/* ── Page content ─────────────────────────────────────────────────────── */}
-      <Box component="main" sx={{ flex: 1, overflow: "auto", position: "relative", minWidth: 0 }}>
-        <Outlet />
+      <Box component="main" sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", minWidth: 0 }}>
+        {/* Unverified email banner */}
+        {!user.isEmailVerified && !bannerDismissed && (
+          <Box
+            sx={{
+              px: 2, py: 1, flexShrink: 0,
+              bgcolor: "warning.light",
+              display: "flex", alignItems: "center", gap: 1,
+              borderBottom: 1, borderColor: "divider",
+            }}
+          >
+            <Typography variant="caption" sx={{ flex: 1, color: "warning.dark" }}>
+              Please verify your email address. Check your inbox for a link from Flowkigai.
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              color="warning"
+              disabled={resending}
+              onClick={handleResend}
+              sx={{ flexShrink: 0, fontSize: "0.7rem" }}
+            >
+              {resending ? "Sending…" : "Resend"}
+            </Button>
+            <Tooltip title="Dismiss">
+              <IconButton size="small" onClick={() => setBannerDismissed(true)} sx={{ color: "warning.dark" }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

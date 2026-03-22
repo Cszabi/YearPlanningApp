@@ -52,6 +52,7 @@ export default function LoginPage() {
           displayName: auth.displayName,
           role: auth.role ?? "User",
           plan: auth.plan ?? "Free",
+          isEmailVerified: auth.isEmailVerified ?? true,
         },
         auth.accessToken,
         auth.refreshToken

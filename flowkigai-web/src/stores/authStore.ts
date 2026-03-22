@@ -8,6 +8,7 @@ interface User {
   calendarProvider?: string;
   role: "User" | "Admin";
   plan: "Free" | "Pro";
+  isEmailVerified: boolean;
 }
 
 interface AuthState {
@@ -16,6 +17,7 @@ interface AuthState {
   refreshToken: string | null;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  setEmailVerified: (verified: boolean) => void;
   logout: () => void;
 }
 
@@ -29,6 +31,8 @@ export const useAuthStore = create<AuthState>()(
         set({ user, accessToken, refreshToken }),
       setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
+      setEmailVerified: (verified) =>
+        set((s) => ({ user: s.user ? { ...s.user, isEmailVerified: verified } : null })),
       logout: () => set({ user: null, accessToken: null, refreshToken: null }),
     }),
     { name: "flowkigai-auth" }

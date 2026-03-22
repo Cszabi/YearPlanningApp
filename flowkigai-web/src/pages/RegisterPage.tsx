@@ -76,6 +76,7 @@ export default function RegisterPage() {
           calendarProvider: auth.calendarProvider ?? undefined,
           role: auth.role ?? "User",
           plan: auth.plan ?? "Free",
+          isEmailVerified: auth.isEmailVerified ?? false,
         },
         auth.accessToken,
         auth.refreshToken
