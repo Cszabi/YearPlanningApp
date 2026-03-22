@@ -9,4 +9,5 @@ public record AuthResponse(
     DateTime AccessTokenExpiresAt,
     string? CalendarProvider,
     string Role,
-    string Plan);
+    string Plan,
+    bool IsEmailVerified);
