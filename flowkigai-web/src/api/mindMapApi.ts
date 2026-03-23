@@ -1,5 +1,19 @@
 import api from "./client";
 
+export interface ProposedNodeDto {
+  label: string;
+  nodeType: string;
+  parentLabel: string | null;
+  ikigaiCategory: string | null;
+  icon: string | null;
+  notes: string | null;
+}
+
+export interface SeedMapResultDto {
+  proposedNodes: ProposedNodeDto[];
+  seedSummary: string;
+}
+
 export interface MindMapNodeDto {
   id: string;
   parentNodeId: string | null;
@@ -79,5 +93,19 @@ export const mindMapApi = {
   ): Promise<{ id: string; title: string }> => {
     const { data } = await api.post(`/mind-maps/${year}/nodes/${nodeId}/convert-to-goal`, { goalType, lifeArea });
     return data.data;
+  },
+
+  seedMap: async (
+    path: string,
+    answers: { question: string; answer: string }[],
+    existingNodeLabels: string[]
+  ): Promise<SeedMapResultDto> => {
+    const { data } = await api.post("/mind-maps/seed", { path, answers, existingNodeLabels });
+    return data.data as SeedMapResultDto;
+  },
+
+  batchCreateNodes: async (year: number, nodes: ProposedNodeDto[]): Promise<MindMapDto> => {
+    const { data } = await api.post(`/mind-maps/${year}/nodes/batch`, { nodes });
+    return data.data as MindMapDto;
   },
 };

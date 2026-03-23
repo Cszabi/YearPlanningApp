@@ -19,7 +19,10 @@ import {
 import { IKIGAI_CATEGORY_CONFIG, getFocusColor, FOCUS_LEGEND, buildFocusColorMap } from "./nodes";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
+import { useMindMapSeedStore } from "@/stores/mindMapSeedStore";
+import SeedPanel from "./SeedPanel";
 import { habitApi } from "@/api/habitApi";
 import { LIFE_AREA_COLORS, LIFE_AREA_NAMES } from "./nodes";
 import RadialTreeView from "./RadialTreeView";
@@ -391,6 +394,13 @@ export default function MindMapCanvas() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ label: string; x: number; y: number } | null>(null);
 
+  const { step: seedStep, setStep: setSeedStep } = useMindMapSeedStore();
+
+  function handleSeedClick() {
+    const nonRootCount = apiNodes.filter((n) => n.nodeType !== "Root").length;
+    setSeedStep(nonRootCount > 0 ? "warning" : "path-choice");
+  }
+
   const handleHover = useCallback(
     (label: string | null, x: number, y: number) =>
       label ? setTooltip({ label, x, y }) : setTooltip(null),
@@ -702,6 +712,22 @@ export default function MindMapCanvas() {
             <MenuItem value="30">Due in 30 days</MenuItem>
           </Select>
         )}
+
+        {/* Seed with AI */}
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={isMobile ? undefined : <AutoFixHighIcon />}
+          onClick={handleSeedClick}
+          sx={{
+            borderRadius: 3,
+            bgcolor: "background.paper",
+            minWidth: isMobile ? 36 : undefined,
+            px: isMobile ? 0.5 : undefined,
+          }}
+        >
+          {isMobile ? <AutoFixHighIcon fontSize="small" /> : "✨ Seed with AI"}
+        </Button>
 
         {/* Focus mode toggle */}
         <Button
@@ -1128,6 +1154,11 @@ export default function MindMapCanvas() {
           <Button variant="contained" color="error" onClick={() => deleteConfirm && doDelete(deleteConfirm)}>Delete</Button>
         </DialogActions>
       </Dialog>
+
+      {/* ── Seed with AI panel ───────────────────────────────────────────────── */}
+      {seedStep !== "idle" && (
+        <SeedPanel apiNodes={apiNodes} onNodesAdded={() => setLoadKey((k) => k + 1)} />
+      )}
     </div>
   );
 }
