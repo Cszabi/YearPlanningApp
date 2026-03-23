@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using YearPlanningApp.Application.Common.Interfaces;
 using YearPlanningApp.Application.Ikigai;
+using YearPlanningApp.Application.Onboarding;
 using YearPlanningApp.Domain.Entities;
 using YearPlanningApp.Domain.Interfaces;
 using YearPlanningApp.Infrastructure.Jobs;
@@ -44,6 +45,7 @@ public static class DependencyInjection
             c.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
         });
         services.AddScoped<IIkigaiThemeExtractionService, IkigaiThemeExtractionService>();
+        services.AddScoped<IOnboardingMindMapSeedService, OnboardingMindMapSeedService>();
 
         services.Configure<OpenverseSettings>(configuration.GetSection("Openverse"));
         services.AddMemoryCache();

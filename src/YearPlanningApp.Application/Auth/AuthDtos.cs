@@ -10,4 +10,5 @@ public record AuthResponse(
     string? CalendarProvider,
     string Role,
     string Plan,
-    bool IsEmailVerified);
+    bool IsEmailVerified,
+    string OnboardingStatus);

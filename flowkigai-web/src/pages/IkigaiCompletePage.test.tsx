@@ -62,10 +62,12 @@ describe("IkigaiCompletePage", () => {
     mockGetJourney.mockResolvedValue(JOURNEY_WITH_NORTH_STAR);
   });
 
-  it("redirects to /ikigai when no north star", async () => {
+  it("shows fallback text when no north star", async () => {
     mockGetJourney.mockResolvedValue(JOURNEY_WITHOUT_NORTH_STAR);
     renderPage();
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/ikigai", { replace: true }));
+    await waitFor(() =>
+      expect(screen.getByText("Your Ikigai journey is complete.")).toBeInTheDocument()
+    );
   });
 
   it("renders the NorthStar quote", async () => {
@@ -77,10 +79,10 @@ describe("IkigaiCompletePage", () => {
 
   it("shows loading spinner while extracting", async () => {
     renderPage();
-    await waitFor(() => screen.getByText("Build my mind map"));
+    await waitFor(() => screen.getByText("Build my Mind Map →"));
     // Make extract take forever
     mockExtractThemes.mockReturnValue(new Promise(() => {}));
-    fireEvent.click(screen.getByText("Build my mind map"));
+    fireEvent.click(screen.getByText("Build my Mind Map →"));
     expect(screen.getByText("Extracting themes…")).toBeInTheDocument();
   });
 
@@ -88,26 +90,26 @@ describe("IkigaiCompletePage", () => {
     const extractResult = { categories: [{ label: "What I Love", themes: ["coding"] }] };
     mockExtractThemes.mockResolvedValue(extractResult);
     renderPage();
-    await waitFor(() => screen.getByText("Build my mind map"));
-    fireEvent.click(screen.getByText("Build my mind map"));
+    await waitFor(() => screen.getByText("Build my Mind Map →"));
+    fireEvent.click(screen.getByText("Build my Mind Map →"));
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/ikigai/seed"));
     expect(mockSetExtractedThemes).toHaveBeenCalledWith(extractResult);
   });
 
-  it("shows error snackbar on extract failure", async () => {
+  it("shows error alert on extract failure", async () => {
     mockExtractThemes.mockRejectedValue(new Error("network"));
     renderPage();
-    await waitFor(() => screen.getByText("Build my mind map"));
-    fireEvent.click(screen.getByText("Build my mind map"));
+    await waitFor(() => screen.getByText("Build my Mind Map →"));
+    fireEvent.click(screen.getByText("Build my Mind Map →"));
     await waitFor(() =>
-      expect(screen.getByText("Could not extract themes. Please try again.")).toBeInTheDocument()
+      expect(screen.getByText(/AI couldn't extract your themes/i)).toBeInTheDocument()
     );
   });
 
-  it("navigates to /map when 'Start from scratch' is clicked", async () => {
+  it("navigates to /map when 'Skip' is clicked", async () => {
     renderPage();
-    await waitFor(() => screen.getByText("Start from scratch →"));
-    fireEvent.click(screen.getByText("Start from scratch →"));
+    await waitFor(() => screen.getByText("Skip — go to Mind Map directly"));
+    fireEvent.click(screen.getByText("Skip — go to Mind Map directly"));
     expect(mockNavigate).toHaveBeenCalledWith("/map");
   });
 
@@ -117,10 +119,10 @@ describe("IkigaiCompletePage", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("does not call extractThemes when 'Start from scratch' is clicked", async () => {
+  it("does not call extractThemes when 'Skip' is clicked", async () => {
     renderPage();
-    await waitFor(() => screen.getByText("Start from scratch →"));
-    fireEvent.click(screen.getByText("Start from scratch →"));
+    await waitFor(() => screen.getByText("Skip — go to Mind Map directly"));
+    fireEvent.click(screen.getByText("Skip — go to Mind Map directly"));
     expect(mockExtractThemes).not.toHaveBeenCalled();
   });
 });

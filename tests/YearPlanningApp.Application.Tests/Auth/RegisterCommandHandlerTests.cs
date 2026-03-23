@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Shouldly;
 using YearPlanningApp.Application.Auth;
@@ -16,6 +17,8 @@ public class RegisterCommandHandlerTests : IDisposable
     private readonly Infrastructure.Persistence.UnitOfWork _uow;
     private readonly ITokenService _tokenService;
     private readonly IPasswordHasher<User> _hasher;
+    private readonly IEmailService _emailService;
+    private readonly IAppSettings _appSettings;
     private readonly RegisterCommandHandler _handler;
 
     public RegisterCommandHandlerTests()
@@ -32,7 +35,14 @@ public class RegisterCommandHandlerTests : IDisposable
         _tokenService.GenerateRefreshToken().Returns("refresh_token");
 
         _hasher = new PasswordHasher<User>();
-        _handler = new RegisterCommandHandler(_uow, _tokenService, _hasher);
+
+        _emailService = Substitute.For<IEmailService>();
+        _appSettings = Substitute.For<IAppSettings>();
+        _appSettings.AppBaseUrl.Returns("https://app.flowkigai.com");
+
+        _handler = new RegisterCommandHandler(
+            _uow, _tokenService, _hasher, _emailService, _appSettings,
+            NullLogger<RegisterCommandHandler>.Instance);
     }
 
     [Fact]
@@ -84,6 +94,69 @@ public class RegisterCommandHandlerTests : IDisposable
 
         result.IsT0.ShouldBeTrue();
         result.AsT0.Email.ShouldBe("upper@example.com");
+    }
+
+    // ── Email verification ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Handle_ShouldSetIsEmailVerifiedFalse_OnNewRegistration()
+    {
+        var command = new RegisterCommand("new@example.com", "New User", "Password123!", null);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.IsT0.ShouldBeTrue();
+        result.AsT0.IsEmailVerified.ShouldBeFalse();
+
+        var user = await _context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == "new@example.com");
+        user.ShouldNotBeNull();
+        user!.IsEmailVerified.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Handle_ShouldStoreVerificationTokenHash_OnNewRegistration()
+    {
+        var command = new RegisterCommand("verify@example.com", "User", "Password123!", null);
+
+        await _handler.Handle(command, CancellationToken.None);
+
+        var user = await _context.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == "verify@example.com");
+        user.ShouldNotBeNull();
+        user!.EmailVerificationTokenHash.ShouldNotBeNullOrEmpty();
+        user.EmailVerificationTokenExpiresAt.ShouldNotBeNull();
+        user.EmailVerificationTokenExpiresAt!.Value.ShouldBeGreaterThan(DateTime.UtcNow);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSendVerificationEmail_OnNewRegistration()
+    {
+        var command = new RegisterCommand("email@example.com", "Email User", "Password123!", null);
+
+        await _handler.Handle(command, CancellationToken.None);
+
+        await _emailService.Received(1).SendAsync(
+            "email@example.com",
+            "Email User",
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSucceed_EvenWhenEmailServiceThrows()
+    {
+        _emailService.SendAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw new Exception("SMTP unavailable"));
+
+        var command = new RegisterCommand("smtp@example.com", "User", "Password123!", null);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.IsT0.ShouldBeTrue(); // registration still succeeds
     }
 
     public void Dispose()

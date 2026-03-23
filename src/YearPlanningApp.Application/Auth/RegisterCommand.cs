@@ -63,6 +63,7 @@ public class RegisterCommandHandler
             DisplayName = command.DisplayName,
             CalendarProvider = command.CalendarProvider,
             IsEmailVerified = false,
+            OnboardingStatus = Domain.Enums.OnboardingStatus.NotStarted,
         };
         user.PasswordHash = _hasher.HashPassword(user, command.Password);
 
@@ -111,6 +112,6 @@ public class RegisterCommandHandler
         }
 
         return new AuthResponse(user.Id, user.Email, user.DisplayName, accessToken, rawRefresh, expiresAt,
-            user.CalendarProvider, user.Role.ToString(), user.Plan.ToString(), user.IsEmailVerified);
+            user.CalendarProvider, user.Role.ToString(), user.Plan.ToString(), user.IsEmailVerified, user.OnboardingStatus.ToString());
     }
 }

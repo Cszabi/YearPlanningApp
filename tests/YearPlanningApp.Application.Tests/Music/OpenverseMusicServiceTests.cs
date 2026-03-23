@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
 using System.Net;
 using System.Text;
 using YearPlanningApp.Infrastructure.Services;
+using YearPlanningApp.Infrastructure.Settings;
 
 namespace YearPlanningApp.Application.Tests.Music;
 
@@ -90,7 +92,7 @@ public class OpenverseMusicServiceTests
     public async Task GetTracksAsync_ReturnsEmptyList_WhenAllHttpCallsFail()
     {
         var factory = MakeFakeFactory(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-        var service = new OpenverseMusicService(factory, MakeFreshCache());
+        var service = new OpenverseMusicService(factory, MakeFreshCache(), Options.Create(new OpenverseSettings()));
 
         var result = await service.GetTracksAsync();
 
@@ -101,7 +103,7 @@ public class OpenverseMusicServiceTests
     public async Task GetTracksAsync_FiltersOut_TracksWithDurationUnder60Seconds()
     {
         var factory = MakeFakeFactory(OkResponse(ShortTrackJson));
-        var service = new OpenverseMusicService(factory, MakeFreshCache());
+        var service = new OpenverseMusicService(factory, MakeFreshCache(), Options.Create(new OpenverseSettings()));
 
         var result = await service.GetTracksAsync();
 
@@ -112,7 +114,7 @@ public class OpenverseMusicServiceTests
     public async Task GetTracksAsync_FiltersOut_TracksWithEmptyAudioUrl()
     {
         var factory = MakeFakeFactory(OkResponse(NoUrlTrackJson));
-        var service = new OpenverseMusicService(factory, MakeFreshCache());
+        var service = new OpenverseMusicService(factory, MakeFreshCache(), Options.Create(new OpenverseSettings()));
 
         var result = await service.GetTracksAsync();
 
@@ -123,7 +125,7 @@ public class OpenverseMusicServiceTests
     public async Task GetTracksAsync_DeduplicatesTracks_BySameId()
     {
         var factory = MakeFakeFactory(OkResponse(DuplicateIdJson));
-        var service = new OpenverseMusicService(factory, MakeFreshCache());
+        var service = new OpenverseMusicService(factory, MakeFreshCache(), Options.Create(new OpenverseSettings()));
 
         var result = await service.GetTracksAsync();
 
@@ -137,7 +139,7 @@ public class OpenverseMusicServiceTests
     public async Task GetTracksAsync_MapsDurationCorrectly_FromMilliseconds()
     {
         var factory = MakeFakeFactory(OkResponse(SingleTrackJson));
-        var service = new OpenverseMusicService(factory, MakeFreshCache());
+        var service = new OpenverseMusicService(factory, MakeFreshCache(), Options.Create(new OpenverseSettings()));
 
         var result = await service.GetTracksAsync();
 
@@ -149,7 +151,7 @@ public class OpenverseMusicServiceTests
     public async Task GetTracksAsync_ReturnsCachedResult_OnSecondCall()
     {
         var factory = MakeFakeFactory(OkResponse(SingleTrackJson));
-        var service = new OpenverseMusicService(factory, MakeFreshCache());
+        var service = new OpenverseMusicService(factory, MakeFreshCache(), Options.Create(new OpenverseSettings()));
 
         await service.GetTracksAsync();
         await service.GetTracksAsync();

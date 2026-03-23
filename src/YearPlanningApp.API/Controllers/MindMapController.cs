@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using YearPlanningApp.API.Models;
 using YearPlanningApp.Application.Ikigai;
 using YearPlanningApp.Application.MindMap;
+using YearPlanningApp.Application.Onboarding;
 using YearPlanningApp.Domain.Enums;
 
 namespace YearPlanningApp.API.Controllers;
@@ -143,6 +144,36 @@ public class MindMapController : ControllerBase
             notFound => NotFound(Envelope.NotFound(notFound))
         );
     }
+
+    // POST /api/v1/mind-maps/seed
+    [HttpPost("seed")]
+    public async Task<IActionResult> SeedFromOnboarding([FromBody] SeedFromOnboardingRequest req, CancellationToken ct)
+    {
+        var answers = req.Answers
+            .Select(a => new ConversationAnswerDto(a.Question, a.Answer))
+            .ToList();
+        var command = new SeedMindMapForOnboardingCommand(req.Path, answers, req.ExistingNodeLabels);
+        var result = await _mediator.Send(command, ct);
+        return result.Match(
+            data => (IActionResult)Ok(Envelope.Success(data)),
+            err  => BadRequest(Envelope.Error(err.Message, "SEED_ERROR"))
+        );
+    }
+
+    // POST /api/v1/mind-maps/{year}/nodes/batch
+    [HttpPost("{year:int}/nodes/batch")]
+    public async Task<IActionResult> BatchCreateNodes(int year, [FromBody] BatchCreateNodesRequest req, CancellationToken ct)
+    {
+        var nodes = req.Nodes
+            .Select(n => new BatchNodeInput(n.Label, n.NodeType, n.ParentLabel, n.IkigaiCategory, n.Icon, n.Notes))
+            .ToList();
+        var command = new BatchCreateMindMapNodesCommand(year, nodes);
+        var result = await _mediator.Send(command, ct);
+        return result.Match(
+            map    => (IActionResult)Ok(Envelope.Success(map)),
+            notFound => NotFound(Envelope.NotFound(notFound))
+        );
+    }
 }
 
 public record AddNodeRequest(Guid? ParentNodeId, string NodeType, string Label, double PositionX, double PositionY);
@@ -151,3 +182,7 @@ public record SavePositionsRequest(List<PositionItem> Positions);
 public record PositionItem(Guid NodeId, double X, double Y);
 public record ConvertToGoalRequest(string GoalType, string LifeArea);
 public record SeedMindMapRequest(int Year, IkigaiExtractionResult Themes, string Mode);
+public record AnswerItem(string Question, string Answer);
+public record SeedFromOnboardingRequest(string Path, List<AnswerItem> Answers, List<string> ExistingNodeLabels);
+public record BatchNodeItem(string Label, string NodeType, string? ParentLabel, string? IkigaiCategory, string? Icon, string? Notes);
+public record BatchCreateNodesRequest(List<BatchNodeItem> Nodes);

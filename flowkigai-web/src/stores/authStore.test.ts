@@ -47,4 +47,19 @@ describe("authStore", () => {
     expect(accessToken).toBeNull();
     expect(refreshToken).toBeNull();
   });
+
+  it("setEmailVerified updates isEmailVerified without changing other user fields", () => {
+    useAuthStore.setState({ user: { ...mockUser, isEmailVerified: false }, accessToken: "tok", refreshToken: "ref" });
+    useAuthStore.getState().setEmailVerified(true);
+    const { user } = useAuthStore.getState();
+    expect(user?.isEmailVerified).toBe(true);
+    expect(user?.email).toBe(mockUser.email);
+    expect(user?.displayName).toBe(mockUser.displayName);
+  });
+
+  it("setEmailVerified does nothing when user is null", () => {
+    useAuthStore.setState({ user: null });
+    useAuthStore.getState().setEmailVerified(true);
+    expect(useAuthStore.getState().user).toBeNull();
+  });
 });

@@ -125,19 +125,17 @@ describe("IkigaiSeedPage", () => {
   it("MergeMode toggle switches between Merge and Replace", async () => {
     const user = userEvent.setup();
     renderPage();
-    const replaceBtn = screen.getByText("Replace");
-    await user.click(replaceBtn);
-    expect(screen.getByText("Replace mode will remove all existing mind map nodes before seeding.")).toBeInTheDocument();
-    const mergeBtn = screen.getByText("Merge");
-    await user.click(mergeBtn);
-    expect(screen.queryByText("Replace mode will remove all existing mind map nodes before seeding.")).not.toBeInTheDocument();
+    await user.click(screen.getByText("Override (start fresh)"));
+    expect(screen.getByText(/All existing Mind Map nodes will be deleted/i)).toBeInTheDocument();
+    await user.click(screen.getByText("Extend existing map"));
+    expect(screen.queryByText(/All existing Mind Map nodes will be deleted/i)).not.toBeInTheDocument();
   });
 
   it("shows Replace warning text when Replace mode is selected", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(screen.getByText("Replace"));
-    expect(screen.getByText(/Replace mode will remove/)).toBeInTheDocument();
+    await user.click(screen.getByText("Override (start fresh)"));
+    expect(screen.getByText(/All existing Mind Map nodes will be deleted/i)).toBeInTheDocument();
   });
 
   it("calls seedMindMap API when Seed button is clicked", async () => {
@@ -174,8 +172,8 @@ describe("IkigaiSeedPage", () => {
   it("sticky bottom bar is present", () => {
     renderPage();
     expect(screen.getByText("Seed my Mind Map")).toBeInTheDocument();
-    expect(screen.getByText("Merge")).toBeInTheDocument();
-    expect(screen.getByText("Replace")).toBeInTheDocument();
+    expect(screen.getByText("Extend existing map")).toBeInTheDocument();
+    expect(screen.getByText("Override (start fresh)")).toBeInTheDocument();
   });
 
   it("seed button is disabled while seeding", async () => {
