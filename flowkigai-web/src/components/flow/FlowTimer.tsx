@@ -6,6 +6,7 @@ import {
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import { useQueryClient } from "@tanstack/react-query";
 import { useFlowTimerStore } from "@/stores/flowTimerStore";
 import { flowSessionApi } from "@/api/flowSessionApi";
 import { musicApi, type FocusTrackDto } from "@/api/musicApi";
@@ -27,6 +28,7 @@ function fillNoise(data: Float32Array, type: "white" | "brown" | "nature") {
 }
 
 export default function FlowTimer() {
+  const queryClient = useQueryClient();
   const { phase, elapsed, session, setup, tick, pause, resume, beginMicroReview, reset } = useFlowTimerStore();
   const [interruptOpen, setInterruptOpen] = useState(false);
   const [interruptReason, setInterruptReason] = useState("");
@@ -208,6 +210,7 @@ export default function FlowTimer() {
     setInterrupting(true);
     try {
       await flowSessionApi.interrupt(session.id, interruptReason.trim() || "—");
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setInterruptOpen(false);
       reset();
     } catch {

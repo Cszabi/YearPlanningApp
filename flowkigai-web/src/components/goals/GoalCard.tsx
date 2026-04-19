@@ -70,6 +70,7 @@ function AddTaskForm({ goalId, milestone, onDone }: AddTaskFormProps) {
     try {
       await goalApi.createTask(goalId, milestone.id, { year: YEAR, title: trimmed, energyLevel: "Shallow", isNextAction: false });
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setTitle("");
       inputRef.current?.focus();
     } catch {
@@ -129,6 +130,7 @@ function AddMilestoneForm({ goalId, nextOrderIndex, onDone }: AddMilestoneFormPr
     try {
       await goalApi.createMilestone(goalId, { year: YEAR, title: title.trim(), targetDate: deadline, orderIndex: nextOrderIndex });
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       onDone();
     } catch {
       setSaving(false);
@@ -221,6 +223,7 @@ export default function GoalCard({ goal }: Props) {
     try {
       await goalApi.updateTaskStatus(taskId, next);
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       setTaskStatus((prev) => ({ ...prev, [taskId]: currentStatus }));
     }
@@ -232,6 +235,7 @@ export default function GoalCard({ goal }: Props) {
     try {
       await goalApi.setNextAction(taskId, next);
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       setNextActionState((prev) => ({ ...prev, [taskId]: current }));
     }
@@ -270,6 +274,7 @@ export default function GoalCard({ goal }: Props) {
     try {
       await goalApi.updateTask(taskId, { title: trimmed });
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       // no-op
     }
@@ -281,6 +286,7 @@ export default function GoalCard({ goal }: Props) {
     taskDeleteTimers.current[taskId] = setTimeout(async () => {
       await goalApi.deleteTask(taskId).catch(() => {});
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     }, UNDO_DELAY);
   }
 
@@ -309,6 +315,7 @@ export default function GoalCard({ goal }: Props) {
         targetDate: editingMilestoneDate || null,
       });
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       // no-op
     }
@@ -320,6 +327,7 @@ export default function GoalCard({ goal }: Props) {
     milestoneDeleteTimers.current[milestoneId] = setTimeout(async () => {
       await goalApi.deleteMilestone(milestoneId).catch(() => {});
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     }, UNDO_DELAY);
   }
 

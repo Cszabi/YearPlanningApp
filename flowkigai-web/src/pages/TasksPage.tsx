@@ -112,6 +112,7 @@ export default function TasksPage() {
       await goalApi.updateTaskStatus(task.id, next);
       if (next === "Done") logAction("task_completed");
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       setStatusOverrides((p) => ({ ...p, [task.id]: cur }));
     }
@@ -124,6 +125,7 @@ export default function TasksPage() {
     try {
       await goalApi.setNextAction(task.id, next);
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       setNextActionOverrides((p) => ({ ...p, [task.id]: cur }));
     }

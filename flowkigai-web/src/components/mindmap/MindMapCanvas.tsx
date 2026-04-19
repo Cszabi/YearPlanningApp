@@ -20,6 +20,7 @@ import { IKIGAI_CATEGORY_CONFIG, getFocusColor, FOCUS_LEGEND, buildFocusColorMap
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import { useQueryClient } from "@tanstack/react-query";
 import { mindMapApi, type MindMapNodeDto } from "@/api/mindMapApi";
 import { useMindMapSeedStore } from "@/stores/mindMapSeedStore";
 import SeedPanel from "./SeedPanel";
@@ -358,6 +359,7 @@ function SunburstSvg({ root, canGoUp, onZoomIn, onZoomOut, onContextMenu, onRena
 // ── Main canvas (state + modals) ───────────────────────────────────────────────
 
 export default function MindMapCanvas() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -568,6 +570,7 @@ export default function MindMapCanvas() {
     const { nodeId, label, notes, ikigaiCategory, icon, lifeArea } = editPanel;
     if (!label.trim()) return;
     await mindMapApi.updateNode(YEAR, nodeId, { label: label.trim(), notes, ikigaiCategory, icon, lifeArea }).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setApiNodes((prev) =>
       prev.map((n) =>
         n.id === nodeId
@@ -610,6 +613,7 @@ export default function MindMapCanvas() {
       apiNodes.filter((n) => n.parentNodeId === id).forEach((n) => queue.push(n.id));
     }
     await mindMapApi.deleteNode(YEAR, nodeId).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setApiNodes((prev) => prev.filter((n) => !toDelete.has(n.id)));
     if (focusedId && toDelete.has(focusedId)) setFocusedId(null);
   }
@@ -635,6 +639,7 @@ export default function MindMapCanvas() {
           trackingMethod: "Streak",
         });
       }
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setApiNodes((prev) =>
         prev.map((n) => (n.id === convertModal.nodeId ? { ...n, nodeType: "Goal" } : n))
       );

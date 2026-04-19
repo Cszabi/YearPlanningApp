@@ -123,6 +123,7 @@ export default function GoalDetailPage() {
     await goalApi.updateGoal(goal.id, YEAR, { title: titleValue.trim() }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
     queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setEditTitle(false);
   }
 
@@ -132,6 +133,7 @@ export default function GoalDetailPage() {
     await goalApi.updateStatus(goal.id, YEAR, status).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
     queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   async function saveWhy() {
@@ -139,6 +141,7 @@ export default function GoalDetailPage() {
     await goalApi.updateGoal(goal.id, YEAR, { whyItMatters: whyValue }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
     queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setEditWhy(false);
   }
 
@@ -152,6 +155,7 @@ export default function GoalDetailPage() {
       timeBound: smartEdit.timeBound,
     }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setSmartEdit(null);
   }
 
@@ -164,6 +168,7 @@ export default function GoalDetailPage() {
       plan: woopEdit.plan,
     }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setWoopEdit(null);
   }
 
@@ -171,6 +176,7 @@ export default function GoalDetailPage() {
     if (!editingTaskTitle.trim()) { setEditingTaskId(null); return; }
     await goalApi.updateTask(taskId, { title: editingTaskTitle.trim() }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setEditingTaskId(null);
   }
 
@@ -178,39 +184,46 @@ export default function GoalDetailPage() {
     const newStatus = task.status === "Done" ? "NotStarted" : "Done";
     await goalApi.updateTaskStatus(task.id, newStatus).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   async function toggleNextAction(task: TaskDto) {
     await goalApi.setNextAction(task.id, !task.isNextAction).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   async function deleteTask(taskId: string) {
     await goalApi.deleteTask(taskId).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   async function saveMilestoneTitle(milestoneId: string) {
     if (!editingMilestoneTitle.trim()) { setEditingMilestoneId(null); return; }
     await goalApi.updateMilestone(milestoneId, { title: editingMilestoneTitle.trim() }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setEditingMilestoneId(null);
   }
 
   async function toggleMilestoneComplete(ms: MilestoneDto) {
     await goalApi.updateMilestone(ms.id, { isComplete: !ms.isComplete }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   async function deleteMilestone(milestoneId: string) {
     await goalApi.deleteMilestone(milestoneId).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
   async function addTask(milestoneId: string) {
     if (!goal || !newTaskTitle.trim()) return;
     await goalApi.createTask(goal.id, milestoneId, { year: YEAR, title: newTaskTitle.trim(), energyLevel: "Shallow", isNextAction: false }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setNewTaskTitle("");
   }
 
@@ -223,6 +236,7 @@ export default function GoalDetailPage() {
       orderIndex: goal.milestones.length,
     }).catch(() => {});
     queryClient.invalidateQueries({ queryKey: ["goal", goalId, YEAR] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     setAddingMilestone(false);
     setNewMilestoneTitle("");
     setNewMilestoneDeadline("");
@@ -767,6 +781,7 @@ export default function GoalDetailPage() {
                   onClick={async () => {
                     await habitApi.logHabit(habit.id).catch(() => {});
                     queryClient.invalidateQueries({ queryKey: ["habits", YEAR] });
+                    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
                   }}
                   sx={{ alignSelf: "flex-start", borderRadius: 3 }}
                 >

@@ -65,6 +65,7 @@ export default function HabitCard({ habit }: Props) {
       setCelebrated(true);
       setTimeout(() => setCelebrated(false), 1800);
       queryClient.invalidateQueries({ queryKey: ["habits", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       // silent
     } finally {
@@ -96,6 +97,7 @@ export default function HabitCard({ habit }: Props) {
       setDeleteConfirmOpen(false);
       queryClient.invalidateQueries({ queryKey: ["habits", YEAR] });
       queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       // silent — leave dialog open so user can retry
     } finally {

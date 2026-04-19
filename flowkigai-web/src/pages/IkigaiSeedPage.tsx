@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useQueryClient } from "@tanstack/react-query";
 import { ikigaiApi } from "@/api/ikigaiApi";
 import { useIkigaiStore, type IkigaiThemeCategory } from "@/stores/ikigaiStore";
 import { usePageAnalytics } from "@/hooks/usePageAnalytics";
@@ -13,6 +14,7 @@ const MAX_THEME_LENGTH = 40;
 
 export default function IkigaiSeedPage() {
   usePageAnalytics("/ikigai/seed");
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const extractedThemes = useIkigaiStore((s) => s.extractedThemes);
   const setHasSeededMindMap = useIkigaiStore((s) => s.setHasSeededMindMap);
@@ -73,6 +75,7 @@ export default function IkigaiSeedPage() {
     setSeeding(true);
     try {
       await ikigaiApi.seedMindMap(YEAR, { categories: cleanedCategories }, mode);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setHasSeededMindMap(true);
       navigate("/map");
     } catch {

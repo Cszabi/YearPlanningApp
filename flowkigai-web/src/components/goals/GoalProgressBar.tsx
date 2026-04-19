@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import { goalApi, type GoalDto } from "@/api/goalApi";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface GoalProgressBarProps {
   percent: number;
@@ -33,6 +33,7 @@ export default function GoalProgressBar({
     message: "",
   });
 
+  const queryClient = useQueryClient();
   const barHeight = size === "md" ? 10 : 6;
   const labelVariant = size === "md" ? "body2" : "caption";
 
@@ -41,6 +42,7 @@ export default function GoalProgressBar({
     onSuccess: (updated) => {
       setEditing(false);
       onUpdated?.(updated);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       if (updated.progressPercent === 100 && percent < 100) {
         setSnackbar({ open: true, severity: "success", message: "Goal achieved! Marked as complete." });
       } else if (updated.progressPercent < 100 && percent === 100) {

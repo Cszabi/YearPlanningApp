@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Typography, Button, Stack, Slider, TextField, Paper,
   Chip, CircularProgress, Divider, ToggleButton, ToggleButtonGroup,
@@ -37,6 +37,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 }
 
 export default function WeeklyReview({ weekStartDate, onBack }: Props) {
+  const queryClient = useQueryClient();
   // ── Fetch auto-populated data ────────────────────────────────────────────
   const { data: weekData, isLoading: loadingData, isError: dataError } =
     useQuery<WeeklyReviewDataDto>({
@@ -133,6 +134,7 @@ export default function WeeklyReview({ weekStartDate, onBack }: Props) {
       isDirty.current = false;
       setSaveStatus("saved");
       if (complete) setIsComplete(true);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       setSaveStatus("error");
     }

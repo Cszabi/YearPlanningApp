@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Box, Typography, Button, Stack, Slider, TextField, CircularProgress,
 } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
 import { useFlowTimerStore } from "@/stores/flowTimerStore";
 import { flowSessionApi } from "@/api/flowSessionApi";
 
@@ -15,6 +16,7 @@ const QUALITY_LABELS = ["Scattered", "Distracted", "Focused", "Deep", "In the zo
 const ENERGY_LABELS  = ["Drained", "Low", "Neutral", "Good", "Energised"];
 
 export default function MicroReview() {
+  const queryClient = useQueryClient();
   const { session, elapsed, complete } = useFlowTimerStore();
   const [outcome,  setOutcome]  = useState<string | null>(null);
   const [quality,  setQuality]  = useState(3);
@@ -32,6 +34,7 @@ export default function MicroReview() {
         energyAfterRating: energy,
         blockers: blockers.trim() || undefined,
       });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       complete(saved);
     } catch {
       setSaving(false);

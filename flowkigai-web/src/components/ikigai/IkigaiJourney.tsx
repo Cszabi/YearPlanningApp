@@ -166,6 +166,7 @@ export default function IkigaiJourney() {
       .saveRoom(YEAR, room.type, answers, true)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ["ikigaiJourney", YEAR] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         const nextRoomIndex = draft.currentRoomIndex + 1;
         if (nextRoomIndex >= 4) {
           setPhase("synthesis");
@@ -194,6 +195,7 @@ export default function IkigaiJourney() {
     setSavingNorthStar(true);
     try {
       await ikigaiApi.saveNorthStar(YEAR, statement);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       // advance anyway
     } finally {
@@ -207,6 +209,7 @@ export default function IkigaiJourney() {
     setSavingValues(true);
     try {
       await ikigaiApi.saveValues(YEAR, values);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     } catch {
       // advance anyway
     } finally {
