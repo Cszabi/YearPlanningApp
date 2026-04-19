@@ -21,6 +21,7 @@ import FlowkigaiLogo from "./FlowkigaiLogo";
 const SIDEBAR_W = 200;
 
 const tabs = [
+  { path: "/dashboard", label: "Dashboard",   icon: "🏠" },
   { path: "/ikigai",    label: "Ikigai",     icon: "🌸" },
   { path: "/map",       label: "Map",         icon: "🗺️" },
   { path: "/goals",     label: "Goals",       icon: "🎯" },
@@ -28,7 +29,6 @@ const tabs = [
   { path: "/flow",      label: "Flow",        icon: "🌊" },
   { path: "/tasks",     label: "Tasks",       icon: "✅" },
   { path: "/reviews",   label: "Reviews",     icon: "🔄" },
-  { path: "/dashboard", label: "Dashboard",   icon: "📊" },
 ];
 
 export default function TabNav() {

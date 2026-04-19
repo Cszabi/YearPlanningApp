@@ -57,7 +57,7 @@ export default function LoginPage() {
         auth.accessToken,
         auth.refreshToken
       );
-      navigate("/ikigai");
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.error?.message ?? "Login failed.");

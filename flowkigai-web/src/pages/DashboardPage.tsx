@@ -1,424 +1,665 @@
-import { useQuery } from "@tanstack/react-query";
-import { usePageAnalytics } from "@/hooks/usePageAnalytics";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { usePageAnalytics } from "@/hooks/usePageAnalytics";
 import {
-  Box, Typography, Stack, Paper, LinearProgress,
-  Chip, Button, Skeleton,
+  Box, Typography, Stack, Paper, Chip, Button, Skeleton,
+  Alert, Checkbox, List, ListItem, ListItemButton,
+  ListItemIcon, ListItemText, IconButton, Tooltip,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import BoltIcon from "@mui/icons-material/Bolt";
-import { ikigaiApi } from "@/api/ikigaiApi";
-import { goalApi, type GoalDto } from "@/api/goalApi";
+import {
+  dashboardApi,
+  type DashboardDto,
+  type DashboardTaskDto,
+  type DashboardHabitDto,
+  type IkigaiDistributionDto,
+} from "@/api/dashboardApi";
+import { goalApi } from "@/api/goalApi";
 import { habitApi } from "@/api/habitApi";
-import { flowSessionApi, type FlowInsightsDto } from "@/api/flowSessionApi";
 import { useFlowTimerStore } from "@/stores/flowTimerStore";
-import PdfActionButtons from "@/components/pdf/PdfActionButtons";
-import FlowHistoryPdf from "@/components/pdf/FlowHistoryPdf";
 
 const YEAR = new Date().getFullYear();
 
-const LIFE_AREA_COLORS: Record<string, string> = {
-  CareerWork: "#0EA5E9",         HealthBody: "#10B981",
-  RelationshipsFamily: "#F43F5E", LearningGrowth: "#8B5CF6",
-  Finance: "#F59E0B",            CreativityHobbies: "#F97316",
-  EnvironmentLifestyle: "#06B6D4", ContributionPurpose: "#6366F1",
+// ── Ikigai donut colors (brand palette — intentionally hardcoded) ─────────
+const IKIGAI_COLORS: Record<string, string> = {
+  love: "#F43F5E",
+  goodAt: "#7C3AED",
+  worldNeeds: "#0D6E6E",
+  paidFor: "#F5A623",
+  intersection: "#E8705A",
 };
 
-const ENERGY_COLORS: Record<string, "primary" | "warning" | "default"> = {
-  Deep: "primary", Medium: "warning", Shallow: "default",
+const IKIGAI_LABELS: Record<string, string> = {
+  love: "Love",
+  goodAt: "Good At",
+  worldNeeds: "World Needs",
+  paidFor: "Paid For",
+  intersection: "Intersection",
 };
 
-// ── Widget skeletons ─────────────────────────────────────────────────────────
-
-function WidgetSkeleton() {
-  return (
-    <Paper variant="outlined" sx={{ borderRadius: 3, p: 3 }}>
-      <Skeleton variant="text" width="40%" height={24} sx={{ mb: 1 }} />
-      <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
-    </Paper>
-  );
-}
-
-// ── 1. North Star Widget ─────────────────────────────────────────────────────
-
-function NorthStarWidget() {
-  const { data: journey, isLoading } = useQuery({
-    queryKey: ["ikigai", YEAR],
-    queryFn: () => ikigaiApi.getJourney(YEAR),
-    retry: false,
-  });
-
-  if (isLoading) return <WidgetSkeleton />;
-  if (!journey?.northStar) return null;
-
+// ── Section skeletons ─────────────────────────────────────────────────────
+function SectionSkeleton({ height = 120 }: { height?: number }) {
   return (
     <Paper
-      variant="outlined"
-      sx={{
-        borderRadius: 3, p: 3,
-        background: "linear-gradient(135deg, rgba(13,110,110,0.06) 0%, transparent 100%)",
-        borderColor: "primary.main",
-      }}
+      elevation={0}
+      sx={{ border: 1, borderColor: "divider", borderRadius: 3, p: 3 }}
     >
-      <Typography
-        variant="caption"
-        color="primary.main"
-        fontWeight={700}
-        sx={{ textTransform: "uppercase", letterSpacing: 1.5, display: "block", mb: 1.5 }}
-      >
-        ✦ North Star
-      </Typography>
-      <Typography
-        variant="h6"
-        fontWeight={400}
-        sx={{ fontFamily: "Georgia, serif", lineHeight: 1.6, color: "text.primary" }}
-      >
-        "{journey.northStar.statement}"
-      </Typography>
+      <Skeleton variant="text" width="30%" height={20} sx={{ mb: 1 }} />
+      <Skeleton variant="rectangular" height={height} sx={{ borderRadius: 2 }} />
     </Paper>
   );
 }
 
-// ── 2. Goal Progress Widget ──────────────────────────────────────────────────
+// ── Ikigai Donut SVG ──────────────────────────────────────────────────────
+function IkigaiDonut({ dist }: { dist: IkigaiDistributionDto }) {
+  const entries = [
+    { key: "love", count: dist.love },
+    { key: "goodAt", count: dist.goodAt },
+    { key: "worldNeeds", count: dist.worldNeeds },
+    { key: "paidFor", count: dist.paidFor },
+    { key: "intersection", count: dist.intersection },
+  ];
+  const total = entries.reduce((s, e) => s + e.count, 0);
 
-function GoalProgressWidget({ goals }: { goals: GoalDto[] }) {
+  if (total === 0) {
+    return (
+      <svg width={80} height={80} viewBox="0 0 80 80">
+        <circle cx={40} cy={40} r={34} fill="none" stroke="#ccc" strokeWidth={8} opacity={0.3} />
+        <text x={40} y={44} textAnchor="middle" fontSize={12} fill="#999">0</text>
+      </svg>
+    );
+  }
+
+  const radius = 34;
+  const cx = 40;
+  const cy = 40;
+  const strokeWidth = 8;
+  const gapDeg = 2;
+  const totalGap = gapDeg * entries.filter((e) => e.count > 0).length;
+  const available = 360 - totalGap;
+
+  let currentAngle = -90;
+  const arcs = entries
+    .filter((e) => e.count > 0)
+    .map((e) => {
+      const sweep = (e.count / total) * available;
+      const startRad = (currentAngle * Math.PI) / 180;
+      const endRad = ((currentAngle + sweep) * Math.PI) / 180;
+      const x1 = cx + radius * Math.cos(startRad);
+      const y1 = cy + radius * Math.sin(startRad);
+      const x2 = cx + radius * Math.cos(endRad);
+      const y2 = cy + radius * Math.sin(endRad);
+      const large = sweep > 180 ? 1 : 0;
+      const d = `M ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2}`;
+      currentAngle += sweep + gapDeg;
+      return { key: e.key, d, count: e.count };
+    });
+
+  return (
+    <svg width={80} height={80} viewBox="0 0 80 80">
+      {arcs.map((arc) => (
+        <Tooltip key={arc.key} title={`${IKIGAI_LABELS[arc.key]}: ${arc.count}`} arrow>
+          <path
+            d={arc.d}
+            fill="none"
+            stroke={IKIGAI_COLORS[arc.key]}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        </Tooltip>
+      ))}
+      <text x={40} y={44} textAnchor="middle" fontSize={13} fill="currentColor" opacity={0.5}>
+        {total}
+      </text>
+    </svg>
+  );
+}
+
+// ── Flow sparkline SVG ────────────────────────────────────────────────────
+function FlowSparkline({ data }: { data: number[] }) {
+  const max = Math.max(...data, 1);
+  const barW = 8;
+  const gap = 4;
+  const h = 40;
+  const w = data.length * (barW + gap) - gap;
+
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      {data.map((v, i) => {
+        const barH = Math.max((v / max) * (h - 4), 2);
+        return (
+          <rect
+            key={i}
+            x={i * (barW + gap)}
+            y={h - barH}
+            width={barW}
+            height={barH}
+            rx={2}
+            fill="#0D6E6E"
+            opacity={v > 0 ? 0.8 : 0.2}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ── Relative time helper ──────────────────────────────────────────────────
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 1 — IDENTITY ANCHOR
+// ═══════════════════════════════════════════════════════════════════════════
+function IdentityAnchor({ data }: { data: DashboardDto }) {
   const navigate = useNavigate();
-  const active = goals.filter((g) => g.status === "Active");
 
-  if (active.length === 0) return null;
+  const distTotal =
+    data.ikigaiDistribution.love +
+    data.ikigaiDistribution.goodAt +
+    data.ikigaiDistribution.worldNeeds +
+    data.ikigaiDistribution.paidFor +
+    data.ikigaiDistribution.intersection;
 
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 3, p: 3 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Stack direction="row" alignItems="center" gap={1}>
-          <TrendingUpIcon fontSize="small" color="primary" />
-          <Typography variant="subtitle2" fontWeight={700}>Active Goals</Typography>
-        </Stack>
-        <Chip label={`${active.length} active`} size="small" color="primary" variant="outlined" />
+    <Paper elevation={0} sx={{ border: 1, borderColor: "divider", borderRadius: 3, p: 3 }}>
+      {/* North Star */}
+      <Box mb={3}>
+        {data.northStar ? (
+          <>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: "uppercase", letterSpacing: 1.5, display: "block", mb: 1 }}
+            >
+              NORTH STAR
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: "Georgia, serif",
+                fontSize: { xs: 20, md: 24 },
+                fontStyle: "italic",
+                color: "text.primary",
+                lineHeight: 1.4,
+              }}
+            >
+              &ldquo;{data.northStar}&rdquo;
+            </Typography>
+          </>
+        ) : (
+          <Typography
+            sx={{
+              fontFamily: "Georgia, serif",
+              fontSize: 16,
+              fontStyle: "italic",
+              color: "text.secondary",
+              cursor: "pointer",
+              "&:hover": { color: "primary.main" },
+            }}
+            onClick={() => navigate("/ikigai")}
+          >
+            Your North Star awaits &rarr;
+          </Typography>
+        )}
+      </Box>
+
+      {/* Values chips */}
+      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap mb={3}>
+        {data.topValues.length > 0 ? (
+          data.topValues.map((v) => (
+            <Chip
+              key={v}
+              label={v}
+              size="small"
+              variant="outlined"
+              onClick={() => navigate("/ikigai")}
+              sx={{
+                borderColor: "primary.main",
+                color: "primary.main",
+                cursor: "pointer",
+              }}
+            />
+          ))
+        ) : (
+          <Chip
+            label="Clarify your values →"
+            size="small"
+            variant="outlined"
+            onClick={() => navigate("/ikigai")}
+            sx={{
+              borderColor: "text.secondary",
+              color: "text.secondary",
+              cursor: "pointer",
+            }}
+          />
+        )}
       </Stack>
 
-      <Stack gap={2}>
-        {active.map((g) => {
-          const color = LIFE_AREA_COLORS[g.lifeArea] ?? "#0D6E6E";
-          return (
+      {/* Ikigai donut + daily question */}
+      <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+        <Box sx={{ flexShrink: 0 }}>
+          {distTotal === 0 ? (
             <Box
-              key={g.id}
-              sx={{ cursor: "pointer", "&:hover": { opacity: 0.8 } }}
-              onClick={() => navigate("/goals")}
+              sx={{ cursor: "pointer" }}
+              onClick={() => navigate("/map")}
             >
-              <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.5}>
-                <Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
-                  <Typography variant="body2" noWrap sx={{ flex: 1 }}>{g.title}</Typography>
-                </Stack>
-                <Stack direction="row" alignItems="center" gap={1} sx={{ flexShrink: 0 }}>
-                  <Chip
-                    label={g.energyLevel}
-                    size="small"
-                    color={ENERGY_COLORS[g.energyLevel] ?? "default"}
-                    variant="outlined"
-                    sx={{ fontSize: "0.65rem" }}
-                  />
-                  <Typography variant="caption" color="text.disabled" sx={{ minWidth: 32, textAlign: "right" }}>
-                    {g.progressPercent}%
-                  </Typography>
-                </Stack>
-              </Stack>
-              <LinearProgress
-                variant="determinate"
-                value={g.progressPercent}
-                sx={{
-                  height: 5, borderRadius: 3,
-                  bgcolor: "action.hover",
-                  "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 3 },
-                }}
-              />
+              <IkigaiDonut dist={data.ikigaiDistribution} />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", textAlign: "center", mt: 0.5, fontSize: 10 }}
+              >
+                Map what matters &rarr;
+              </Typography>
             </Box>
-          );
-        })}
-      </Stack>
+          ) : (
+            <IkigaiDonut dist={data.ikigaiDistribution} />
+          )}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: "Georgia, serif",
+              fontStyle: "italic",
+              color: "text.secondary",
+              fontSize: 18,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {data.dailyQuestion}
+          </Typography>
+        </Box>
+      </Box>
     </Paper>
   );
 }
 
-// ── 3. Habit Streak Widget ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 2 — TODAY
+// ═══════════════════════════════════════════════════════════════════════════
+function TodaySection({ data }: { data: DashboardDto }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const startSetup = useFlowTimerStore((s) => s.startSetup);
+  const today = new Date().toISOString().slice(0, 10);
 
-function HabitStreakWidget() {
-  const { data: habits = [], isLoading } = useQuery({
-    queryKey: ["habits", YEAR],
-    queryFn: () => habitApi.getHabits(YEAR),
-    retry: false,
-  });
+  async function completeTask(task: DashboardTaskDto) {
+    try {
+      await goalApi.updateTaskStatus(task.id, "Done");
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["goals", YEAR] });
+    } catch { /* ignore */ }
+  }
 
-  if (isLoading) return <WidgetSkeleton />;
-  if (habits.length === 0) return null;
-
-  const sorted = [...habits].sort((a, b) => b.currentStreak - a.currentStreak);
-  const top = sorted[0];
+  async function logHabit(habit: DashboardHabitDto) {
+    try {
+      await habitApi.logHabit(habit.habitId);
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["habits", YEAR] });
+    } catch { /* ignore */ }
+  }
 
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 3, p: 3 }}>
-      <Stack direction="row" alignItems="center" gap={1} mb={2}>
-        <LocalFireDepartmentIcon fontSize="small" sx={{ color: "#F97316" }} />
-        <Typography variant="subtitle2" fontWeight={700}>Habit Streaks</Typography>
-      </Stack>
+    <Paper elevation={0} sx={{ border: 1, borderColor: "divider", borderRadius: 3, p: 3 }}>
+      <Typography variant="overline" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+        TODAY
+      </Typography>
 
-      {/* Featured top streak */}
-      {top.currentStreak > 0 && (
+      {/* Next Action */}
+      {data.nextAction ? (
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 2 }}>
+          <Checkbox
+            size="small"
+            onChange={() => completeTask(data.nextAction!)}
+            sx={{ mt: -0.5 }}
+          />
+          <BoltIcon fontSize="small" sx={{ color: "warning.main", mt: 0.25 }} />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="h6" sx={{ lineHeight: 1.3 }}>
+              {data.nextAction.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {data.nextAction.goalTitle}
+            </Typography>
+          </Box>
+        </Box>
+      ) : (
         <Paper
-          sx={{
-            borderRadius: 2, p: 1.5, mb: 2,
-            bgcolor: "rgba(249,115,22,0.06)",
-            border: "1px solid rgba(249,115,22,0.3)",
-          }}
+          sx={{ bgcolor: "background.default", p: 2, mb: 2, borderRadius: 2, cursor: "pointer" }}
+          onClick={() => navigate("/goals")}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="body2" fontWeight={600}>{top.title}</Typography>
-            <Stack direction="row" alignItems="center" gap={0.5}>
-              <Typography variant="h6" fontWeight={700} sx={{ color: "#F97316" }}>
-                {top.currentStreak}
-              </Typography>
-              <Typography variant="caption" color="text.disabled">days 🔥</Typography>
-            </Stack>
-          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Pick today&apos;s focus &rarr;
+          </Typography>
+          <Typography variant="caption" color="text.disabled">
+            Mark a task with &#9889; to anchor your day
+          </Typography>
         </Paper>
       )}
 
-      <Stack gap={1}>
-        {sorted.slice(top.currentStreak > 0 ? 1 : 0).map((h) => (
-          <Stack key={h.id} direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="body2" color="text.secondary">{h.title}</Typography>
+      {/* Today's tasks */}
+      {data.todaysTasks.length > 0 ? (
+        <List dense disablePadding sx={{ mb: 2 }}>
+          {data.todaysTasks.map((t) => {
+            const overdue = t.dueDate && t.dueDate.slice(0, 10) < today;
+            return (
+              <ListItem
+                key={t.id}
+                disablePadding
+                secondaryAction={
+                  <IconButton
+                    size="small"
+                    onClick={() => navigate(`/goals/${t.goalId}`)}
+                    sx={{ opacity: 0.5 }}
+                  >
+                    <BoltIcon
+                      fontSize="small"
+                      sx={{ color: t.isNextAction ? "warning.main" : "action.disabled" }}
+                    />
+                  </IconButton>
+                }
+              >
+                <ListItemButton
+                  dense
+                  onClick={() => navigate(`/goals/${t.goalId}`)}
+                  sx={{ borderRadius: 1 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    <Checkbox
+                      size="small"
+                      edge="start"
+                      onClick={(e) => { e.stopPropagation(); completeTask(t); }}
+                      sx={{ p: 0 }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t.title}
+                    primaryTypographyProps={{ variant: "body2", noWrap: true }}
+                  />
+                  {overdue && (
+                    <Box
+                      sx={{
+                        width: 8, height: 8, borderRadius: "50%",
+                        bgcolor: "error.main", flexShrink: 0, ml: 1,
+                      }}
+                    />
+                  )}
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      ) : (
+        <Typography variant="body2" fontStyle="italic" color="text.secondary" mb={2}>
+          Nothing due today &mdash; breathe.
+        </Typography>
+      )}
+
+      {/* Habits row */}
+      {data.todaysHabits.length > 0 && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ overflowX: "auto", pb: 1, mb: 2 }}
+        >
+          {data.todaysHabits.map((h) => (
             <Chip
-              label={`${h.currentStreak} day${h.currentStreak !== 1 ? "s" : ""}`}
+              key={h.habitId}
+              label={`${h.title} · ${h.currentStreak}🔥`}
               size="small"
-              variant="outlined"
-              color={h.currentStreak >= 7 ? "success" : h.currentStreak >= 3 ? "warning" : "default"}
-              sx={{ fontSize: "0.7rem" }}
+              variant={h.loggedToday ? "outlined" : "filled"}
+              color={h.loggedToday ? "default" : "primary"}
+              onClick={h.loggedToday ? undefined : () => logHabit(h)}
+              sx={{
+                flexShrink: 0,
+                opacity: h.loggedToday ? 0.6 : 1,
+                cursor: h.loggedToday ? "default" : "pointer",
+              }}
             />
-          </Stack>
-        ))}
-      </Stack>
+          ))}
+        </Stack>
+      )}
+
+      {/* Flow quick-start */}
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={<PlayArrowIcon />}
+        onClick={() => {
+          startSetup();
+          navigate("/flow");
+        }}
+        sx={{ borderRadius: 2 }}
+      >
+        Start 25-min flow session
+      </Button>
     </Paper>
   );
 }
 
-// ── 4. Flow Insights Widget ──────────────────────────────────────────────────
-
-function FlowInsightsWidget() {
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 3 — PROGRESS
+// ═══════════════════════════════════════════════════════════════════════════
+function ProgressSection({ data }: { data: DashboardDto }) {
   const navigate = useNavigate();
-  const startSetup = useFlowTimerStore((s) => s.startSetup);
 
-  const { data: insights, isLoading, isError } = useQuery<FlowInsightsDto>({
-    queryKey: ["flow-insights"],
-    queryFn: () => flowSessionApi.getInsights(),
-    retry: 1,
-  });
-
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["flow-sessions", YEAR],
-    queryFn: () => flowSessionApi.getSessions(YEAR),
-    retry: 1,
-  });
-
-  if (isLoading) return <WidgetSkeleton />;
-
-  const hours = insights
-    ? Math.round(insights.weekTotalMinutes / 60 * 10) / 10
-    : 0;
+  const totalWeekMin = data.weeklyFlowMinutes.reduce((s, v) => s + v, 0);
 
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 3, p: 3 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Stack direction="row" alignItems="center" gap={1}>
-          <BoltIcon fontSize="small" color="primary" />
-          <Typography variant="subtitle2" fontWeight={700}>Flow This Week</Typography>
-        </Stack>
-        <Stack direction="row" gap={1} alignItems="center">
-          {sessions.length > 0 && (
-            <PdfActionButtons
-              document={<FlowHistoryPdf sessions={sessions} year={YEAR} />}
-              filename={`Flow_History_${YEAR}`}
-              subject={`Flow Session History ${YEAR}`}
-            />
-          )}
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<PlayArrowIcon />}
-            onClick={() => { startSetup(); navigate("/flow"); }}
-            sx={{ borderRadius: 4 }}
-          >
-            Start session
-          </Button>
-        </Stack>
-      </Stack>
-
-      {isError || !insights ? (
-        <Box sx={{ textAlign: "center", py: 2 }}>
-          <Typography variant="body2" color="text.disabled">No session data yet this week</Typography>
-          <Typography variant="caption" color="text.disabled">Complete a flow session to see insights</Typography>
+    <Paper elevation={0} sx={{ border: 1, borderColor: "divider", borderRadius: 3, p: 3 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+        {/* Active goals */}
+        <Box
+          sx={{ cursor: "pointer", "&:hover": { opacity: 0.7 } }}
+          onClick={() => navigate("/goals")}
+        >
+          <Typography variant="h3" fontWeight={700}>{data.activeGoalCount}</Typography>
+          <Typography variant="caption" color="text.secondary">Active goals</Typography>
         </Box>
-      ) : (
-        <Stack gap={2}>
-          <Stack direction="row" gap={2}>
-            <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, flex: 1, textAlign: "center" }}>
-              <Typography variant="h5" fontWeight={700} color="primary.main">
-                {insights.weekSessionCount}
-              </Typography>
-              <Typography variant="caption" color="text.disabled">sessions</Typography>
-            </Paper>
-            <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, flex: 1, textAlign: "center" }}>
-              <Typography variant="h5" fontWeight={700} color="primary.main">
-                {hours}h
-              </Typography>
-              <Typography variant="caption" color="text.disabled">deep work</Typography>
-            </Paper>
-            {insights.weekAvgFlowQuality && (
-              <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, flex: 1, textAlign: "center" }}>
-                <Typography variant="h5" fontWeight={700} color="primary.main">
-                  {insights.weekAvgFlowQuality.toFixed(1)}
-                </Typography>
-                <Typography variant="caption" color="text.disabled">avg quality</Typography>
-              </Paper>
-            )}
-          </Stack>
 
-          {insights.bestHour !== null && (
-            <Typography variant="body2" color="text.secondary" textAlign="center">
-              ⏰ Your peak time:{" "}
-              <Typography component="span" fontWeight={600} color="text.primary">
-                {insights.bestHour < 12
-                  ? `${insights.bestHour || 12} AM`
-                  : `${insights.bestHour === 12 ? 12 : insights.bestHour - 12} PM`}
+        {/* Nearest deadline */}
+        <Box
+          sx={{ cursor: data.nearestDeadline ? "pointer" : "default" }}
+          onClick={() => data.nearestDeadline && navigate(`/goals/${data.nearestDeadline.goalId}`)}
+        >
+          {data.nearestDeadline ? (
+            <>
+              <Typography variant="body2" noWrap>{data.nearestDeadline.title}</Typography>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{
+                  color: data.nearestDeadline.daysRemaining < 3
+                    ? "error.main"
+                    : data.nearestDeadline.daysRemaining < 7
+                      ? "warning.main"
+                      : "success.main",
+                }}
+              >
+                in {data.nearestDeadline.daysRemaining} days
               </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No upcoming deadlines
             </Typography>
           )}
-        </Stack>
+        </Box>
+
+        {/* Review status */}
+        <Box>
+          <Chip
+            label={
+              data.reviewStatus === "Done"
+                ? "Review: Done"
+                : data.reviewStatus === "Pending"
+                  ? "Review pending"
+                  : "Review overdue"
+            }
+            color={
+              data.reviewStatus === "Done"
+                ? "success"
+                : data.reviewStatus === "Pending"
+                  ? "warning"
+                  : "error"
+            }
+            size="small"
+            onClick={() => navigate("/reviews")}
+            sx={{ cursor: "pointer" }}
+          />
+        </Box>
+
+        {/* Streak risk */}
+        {data.habitStreakRiskCount > 0 && (
+          <Box>
+            <Chip
+              label={`🔥 ${data.habitStreakRiskCount} streak(s) at risk`}
+              color={data.habitStreakRiskCount > 2 ? "error" : "warning"}
+              size="small"
+            />
+          </Box>
+        )}
+
+        {/* Flow insights — full width */}
+        <Box
+          sx={{
+            gridColumn: "1 / -1",
+            cursor: "pointer",
+            "&:hover": { opacity: 0.7 },
+          }}
+          onClick={() => navigate("/flow")}
+        >
+          <FlowSparkline data={data.weeklyFlowMinutes} />
+          <Typography variant="body2" color="text.secondary" mt={0.5}>
+            {totalWeekMin} min this week
+          </Typography>
+          {data.flowInsight?.bestDayOfWeek && data.flowInsight?.bestHourOfDay != null && (
+            <Typography variant="caption" color="text.disabled">
+              Best day: {data.flowInsight.bestDayOfWeek} &middot; Best hour: {data.flowInsight.bestHourOfDay}:00
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 4 — REFLECT STRIP
+// ═══════════════════════════════════════════════════════════════════════════
+function ReflectStrip({ data }: { data: DashboardDto }) {
+  const navigate = useNavigate();
+
+  return (
+    <Paper elevation={0} sx={{ bgcolor: "background.default", borderRadius: 3, p: 3 }}>
+      {data.lastReflection ? (
+        <>
+          <Typography
+            sx={{
+              fontFamily: "Georgia, serif",
+              fontStyle: "italic",
+              color: "text.primary",
+              mb: 1,
+            }}
+          >
+            &ldquo;{data.lastReflection.content}&rdquo;
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+            {relativeTime(data.lastReflection.createdAt)}
+          </Typography>
+          <Typography
+            variant="body2"
+            color="primary.main"
+            sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+            onClick={() => navigate("/reviews")}
+          >
+            Continue reflecting &rarr;
+          </Typography>
+        </>
+      ) : (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ cursor: "pointer", "&:hover": { color: "primary.main" } }}
+          onClick={() => navigate("/reviews")}
+        >
+          Your first weekly review waits. &rarr;
+        </Typography>
       )}
     </Paper>
   );
 }
 
-// ── Dashboard Page ───────────────────────────────────────────────────────────
-
+// ═══════════════════════════════════════════════════════════════════════════
+// DASHBOARD PAGE
+// ═══════════════════════════════════════════════════════════════════════════
 export default function DashboardPage() {
-  usePageAnalytics("/dashboard");
-  const navigate = useNavigate();
-  const startSetup = useFlowTimerStore((s) => s.startSetup);
+  usePageAnalytics("dashboard");
 
-  const { data: goals = [], isLoading: loadingGoals } = useQuery({
-    queryKey: ["goals", YEAR],
-    queryFn: () => goalApi.getGoals(YEAR),
+  const { data, isLoading, isError, refetch } = useQuery<DashboardDto>({
+    queryKey: ["dashboard"],
+    queryFn: dashboardApi.getDashboard,
+    staleTime: 60_000,
   });
 
-  const activeGoals = goals.filter((g) => g.status === "Active");
-
   return (
-    <Box sx={{ height: "100%", overflow: "auto", bgcolor: "background.default" }}>
-
-      {/* Header */}
-      <Box sx={{
-        position: "sticky", top: 0, zIndex: 10,
-        bgcolor: "background.paper", borderBottom: 1, borderColor: "divider",
-        px: 3, py: 1.5,
-      }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Box>
-            <Typography variant="h6" fontWeight={700}>Dashboard</Typography>
-            <Typography variant="caption" color="text.disabled">
-              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<PlayArrowIcon />}
-            onClick={() => { startSetup(); navigate("/flow"); }}
-            sx={{ borderRadius: 6 }}
-          >
-            Start flow session
-          </Button>
-        </Stack>
-      </Box>
-
-      <Box sx={{ px: 3, py: 3, maxWidth: 900, mx: "auto" }}>
-
-        {/* North Star — full width */}
-        <Box mb={2.5}>
-          <NorthStarWidget />
-        </Box>
-
-        {/* 2-column grid for widgets */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            gap: 2.5,
-          }}
-        >
-          {/* Goal Progress */}
-          {loadingGoals ? (
-            <WidgetSkeleton />
-          ) : (
-            <GoalProgressWidget goals={goals} />
-          )}
-
-          {/* Habit Streaks */}
-          <HabitStreakWidget />
-
-          {/* Flow Insights — spans full width on md+ when goals are present */}
-          <Box sx={{ gridColumn: { xs: "1", md: activeGoals.length > 0 ? "1 / -1" : "1" } }}>
-            <FlowInsightsWidget />
-          </Box>
-        </Box>
-
-        {/* Empty state: no active goals */}
-        {!loadingGoals && activeGoals.length === 0 && (
-          <Box sx={{ textAlign: "center", py: 8 }}>
-            <Typography variant="h2" mb={2}>🎯</Typography>
-            <Typography variant="body1" color="text.secondary" mb={1}>
-              No active goals yet
-            </Typography>
-            <Typography variant="body2" color="text.disabled" mb={3}>
-              Set your goals to start tracking progress here
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/goals")}
-              sx={{ borderRadius: 6 }}
+    <Box
+      sx={{
+        height: "100%",
+        overflow: "auto",
+        bgcolor: "background.default",
+        "@keyframes fadeIn": {
+          from: { opacity: 0 },
+          to: { opacity: 1 },
+        },
+      }}
+    >
+      <Box
+        sx={{
+          maxWidth: 640,
+          mx: "auto",
+          px: { xs: 2, md: 3 },
+          py: { xs: 2, md: 3 },
+          animation: "fadeIn 150ms ease-out",
+        }}
+      >
+        <Stack direction="column" spacing={3}>
+          {isLoading ? (
+            <>
+              <SectionSkeleton height={160} />
+              <SectionSkeleton height={200} />
+              <SectionSkeleton />
+              <SectionSkeleton height={60} />
+            </>
+          ) : isError ? (
+            <Alert
+              severity="error"
+              action={
+                <Button color="inherit" size="small" onClick={() => refetch()}>
+                  Retry
+                </Button>
+              }
             >
-              Set goals →
-            </Button>
-          </Box>
-        )}
-
-        {/* Quick links */}
-        <Box mt={4}>
-          <Typography variant="caption" color="text.disabled"
-            sx={{ textTransform: "uppercase", letterSpacing: 1, display: "block", mb: 1.5 }}>
-            Quick links
-          </Typography>
-          <Stack direction="row" gap={1} flexWrap="wrap">
-            {[
-              { label: "✅ Today's tasks", path: "/tasks" },
-              { label: "🌸 Ikigai", path: "/ikigai" },
-              { label: "🗺️ Mind map", path: "/map" },
-              { label: "🔄 Weekly review", path: "/reviews" },
-              { label: "📅 Calendar", path: "/calendar" },
-            ].map((l) => (
-              <Button
-                key={l.path}
-                size="small"
-                variant="outlined"
-                onClick={() => navigate(l.path)}
-                sx={{ borderRadius: 4, fontSize: "0.8rem" }}
-              >
-                {l.label}
-              </Button>
-            ))}
-          </Stack>
-        </Box>
+              Failed to load dashboard. Please try again.
+            </Alert>
+          ) : data ? (
+            <>
+              <IdentityAnchor data={data} />
+              <TodaySection data={data} />
+              <ProgressSection data={data} />
+              <ReflectStrip data={data} />
+            </>
+          ) : null}
+        </Stack>
       </Box>
     </Box>
   );

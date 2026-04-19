@@ -81,7 +81,7 @@ export default function RegisterPage() {
         auth.accessToken,
         auth.refreshToken
       );
-      navigate("/ikigai");
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const apiError = err.response?.data?.error;
