@@ -64,7 +64,7 @@ export interface DashboardReflectionDto {
 
 export const dashboardApi = {
   getDashboard: async (): Promise<DashboardDto> => {
-    const res = await client.get("/api/v1/dashboard");
+    const res = await client.get("/dashboard");
     return res.data.data;
   },
 };

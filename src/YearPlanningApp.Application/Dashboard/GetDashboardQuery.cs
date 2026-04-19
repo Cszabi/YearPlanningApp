@@ -67,29 +67,16 @@ public class GetDashboardQueryHandler : IQueryHandler<GetDashboardQuery, Dashboa
         var year = DateTime.UtcNow.Year;
         var today = DateTime.UtcNow.Date;
 
-        // ── Parallel queries (7 DB round-trips executed concurrently) ─────────
-        var journeyTask = _uow.Ikigai.GetJourneyByUserAndYearAsync(userId, year, ct);
-        var valuesTask = _uow.Ikigai.GetValuesByUserAndYearAsync(userId, year, ct);
-        var mindMapTask = _uow.MindMaps.GetByUserAndYearAsync(userId, year, ct);
-        var goalsTask = _uow.Goals.GetByUserAndYearAsync(userId, year, ct);
-        var habitsTask = _uow.Habits.GetByUserAndYearAsync(userId, year, ct);
-        var sessionsTask = _uow.FlowSessions.GetSessionsByDateRangeAsync(
-            userId, today.AddDays(-30), today.AddDays(1), ct);
-        var reviewsTask = _uow.Reviews.GetByUserAndYearAsync(
-            userId, ReviewType.Weekly, year, ct);
-
-        await Task.WhenAll(
-            journeyTask, valuesTask, mindMapTask,
-            goalsTask, habitsTask, sessionsTask,
-            reviewsTask);
-
-        var journey = journeyTask.Result;
-        var values = valuesTask.Result.ToList();
-        var mindMap = mindMapTask.Result;
-        var goals = goalsTask.Result.ToList();
-        var habits = habitsTask.Result.ToList();
-        var sessions = sessionsTask.Result.ToList();
-        var reviews = reviewsTask.Result.ToList();
+        // ── Sequential queries (DbContext is not thread-safe) ────────────────
+        var journey = await _uow.Ikigai.GetJourneyByUserAndYearAsync(userId, year, ct);
+        var values = (await _uow.Ikigai.GetValuesByUserAndYearAsync(userId, year, ct)).ToList();
+        var mindMap = await _uow.MindMaps.GetByUserAndYearAsync(userId, year, ct);
+        var goals = (await _uow.Goals.GetByUserAndYearAsync(userId, year, ct)).ToList();
+        var habits = (await _uow.Habits.GetByUserAndYearAsync(userId, year, ct)).ToList();
+        var sessions = (await _uow.FlowSessions.GetSessionsByDateRangeAsync(
+            userId, today.AddDays(-30), today.AddDays(1), ct)).ToList();
+        var reviews = (await _uow.Reviews.GetByUserAndYearAsync(
+            userId, ReviewType.Weekly, year, ct)).ToList();
 
         // ── North Star ────────────────────────────────────────────────────────
         var northStar = journey?.NorthStar?.Statement;
