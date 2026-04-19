@@ -110,7 +110,13 @@ async function cacheFirst(request, maxAgeDays = 365) {
 // ── Push Notifications ──────────────────────────────────────────────────────
 
 self.addEventListener('push', (event) => {
-  const data = event.data.json();
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    const text = event.data?.text() ?? 'Notification';
+    data = { title: text, body: '', url: '/' };
+  }
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
@@ -124,4 +130,24 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(clients.openWindow(event.notification.data.url));
+});
+
+// When the browser rotates the push subscription (WNS/FCM channel refresh),
+// re-subscribe with the same VAPID key and notify open windows so they can
+// send the new endpoint to the backend.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    self.registration.pushManager
+      .subscribe(event.oldSubscription.options)
+      .then((newSub) => {
+        const json = newSub.toJSON();
+        return self.clients
+          .matchAll({ type: 'window', includeUncontrolled: true })
+          .then((clients) => {
+            clients.forEach((client) =>
+              client.postMessage({ type: 'PUSH_SUBSCRIPTION_RENEWED', subscription: json })
+            );
+          });
+      })
+  );
 });

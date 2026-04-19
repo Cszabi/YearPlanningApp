@@ -46,6 +46,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IIkigaiThemeExtractionService, IkigaiThemeExtractionService>();
         services.AddScoped<IOnboardingMindMapSeedService, OnboardingMindMapSeedService>();
+        services.AddScoped<IReleaseNotesService, ReleaseNotesService>();
 
         services.Configure<OpenverseSettings>(configuration.GetSection("Openverse"));
         services.AddMemoryCache();

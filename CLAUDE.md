@@ -34,15 +34,23 @@ npm install
 npm run dev    # proxies /api → http://localhost:5253
 npm run build  # tsc -b && vite build
 npm run lint
+npx tsc --noEmit                  # type-check only (no build output)
 npm test                          # vitest run (all tests, once)
 npm run test:watch                # vitest interactive watch mode
 npx vitest run LoginPage          # single test file by name
 npm run test:coverage             # coverage report
+
+# E2E tests (from flowkigai-web/, requires backend running)
+npx playwright test               # run all e2e specs (chromium)
+npx playwright test e2e/auth.spec.ts  # single spec file
+npx playwright test --headed      # run with visible browser
 ```
+
+**TypeScript strictness:** `noUnusedLocals` and `noUnusedParameters` are enabled — prefix unused params with `_` (e.g. `_event`) to avoid build errors.
 
 ## Backend Architecture
 
-**Four projects in Clean Architecture order (no skipping layers):**
+**.NET 9 / EF Core 9 — four projects in Clean Architecture order (no skipping layers):**
 - `YearPlanningApp.Domain` — entities, enums, `IRepository<T>` interfaces (no dependencies)
 - `YearPlanningApp.Application` — CQRS handlers, validators, DTOs (depends only on Domain)
 - `YearPlanningApp.Infrastructure` — EF Core + Postgres, Redis, JWT, SMTP email (implements Application interfaces)

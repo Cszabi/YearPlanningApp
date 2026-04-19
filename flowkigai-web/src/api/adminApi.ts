@@ -35,4 +35,14 @@ export const adminApi = {
     const { data } = await api.put(`/admin/users/${id}/plan`, { plan });
     return data.data as UserSummaryDto;
   },
+
+  generateReleaseNotes: async (sinceDate: string): Promise<string> => {
+    const { data } = await api.get(`/admin/release-notes/preview?sinceDate=${sinceDate}`);
+    return (data.data as { html: string }).html;
+  },
+
+  sendAnnouncement: async (subject: string, htmlBody: string, sinceDate: string): Promise<{ sentCount: number }> => {
+    const { data } = await api.post("/admin/send-announcement", { subject, htmlBody, sinceDate });
+    return data.data as { sentCount: number };
+  },
 };

@@ -61,6 +61,26 @@ public class AdminController : ControllerBase
             valError => BadRequest(Envelope.ValidationError(valError))
         );
     }
+
+    [HttpGet("release-notes/preview")]
+    public async Task<IActionResult> GetReleaseNotesPreview([FromQuery] DateOnly sinceDate, CancellationToken ct)
+    {
+        var html = await _mediator.Send(new GenerateReleaseNotesQuery(sinceDate), ct);
+        return Ok(Envelope.Success(new { html }));
+    }
+
+    [HttpPost("send-announcement")]
+    public async Task<IActionResult> SendAnnouncement(
+        [FromBody] SendAnnouncementRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(
+            new SendAnnouncementCommand(request.Subject, request.HtmlBody, request.SinceDate), ct);
+        return result.Match<IActionResult>(
+            ok  => Ok(Envelope.Success(ok)),
+            err => BadRequest(Envelope.ValidationError(err))
+        );
+    }
 }
 
 public record UpdatePlanRequest(string Plan);
+public record SendAnnouncementRequest(string Subject, string HtmlBody, DateOnly SinceDate);

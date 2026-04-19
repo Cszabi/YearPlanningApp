@@ -5,6 +5,8 @@ export const exportApi = {
     const form = new FormData();
     form.append("pdf", pdfBlob, `${subject.replace(/\s+/g, "_")}.pdf`);
     form.append("subject", subject);
-    await client.post("/export/email-pdf", form);
+    await client.post("/export/email-pdf", form, {
+      headers: { "Content-Type": null as unknown as string },
+    });
   },
 };

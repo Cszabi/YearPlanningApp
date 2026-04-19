@@ -40,10 +40,16 @@ services:
       - Smtp__Password=${SMTP_PASSWORD:-}
       - Smtp__FromAddress=${SMTP_FROM_ADDRESS:-noreply@flowkigai.com}
       - Smtp__FromName=${SMTP_FROM_NAME:-Flowkigai}
+      - Cors__AllowedOrigins__0=https://flowkigai.com
+      - Cors__AllowedOrigins__1=https://www.flowkigai.com
+      - Cors__AllowedOrigins__2=app://braini
       - App__BaseUrl=https://flowkigai.com
       - Vapid__Subject=mailto:admin@flowkigai.com
       - Vapid__PublicKey=${VAPID_PUBLIC_KEY}
       - Vapid__PrivateKey=${VAPID_PRIVATE_KEY}
+      - Anthropic__ApiKey=${ANTHROPIC_API_KEY}
+      - Openverse__ClientId=${OPENVERSE_CLIENT_ID}
+      - Openverse__ClientSecret=${OPENVERSE_CLIENT_SECRET}
     volumes:
       - dataprotection_keys:/root/.aspnet/DataProtection-Keys
     depends_on:

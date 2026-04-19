@@ -4,11 +4,13 @@ import {
   Box, Typography, Table, TableHead, TableRow, TableCell, TableBody,
   Chip, IconButton, Tooltip, CircularProgress, Alert, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, Menu, MenuItem,
-  Collapse, List, ListItem, ListItemText, Divider,
+  Collapse, List, ListItem, ListItemText, Divider, TextField, Paper,
 } from "@mui/material";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import SendIcon from "@mui/icons-material/Send";
 import { adminApi, type UserSummaryDto, type UserDetailDto } from "@/api/adminApi";
 
 export default function AdminPage() {
@@ -33,6 +35,29 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<UserSummaryDto | null>(null);
   const [planMenuAnchor, setPlanMenuAnchor] = useState<{ el: HTMLElement; user: UserSummaryDto } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const [sinceDate, setSinceDate] = useState(today);
+  const [rnSubject, setRnSubject] = useState(`Flowkigai — What's new since ${today}`);
+  const [rnBody, setRnBody] = useState("");
+  const [sentCount, setSentCount] = useState<number | null>(null);
+
+  const generateMutation = useMutation({
+    mutationFn: () => adminApi.generateReleaseNotes(sinceDate),
+    onSuccess: (html) => { setRnBody(html); setSentCount(null); },
+  });
+
+  const announcementMutation = useMutation({
+    mutationFn: () => adminApi.sendAnnouncement(rnSubject, rnBody, sinceDate),
+    onSuccess: (res) => setSentCount(res.sentCount),
+  });
+
+  function handleSinceDateChange(date: string) {
+    setSinceDate(date);
+    setRnSubject(`Flowkigai — What's new since ${date}`);
+    setRnBody("");
+    setSentCount(null);
+  }
 
   function handleDeleteConfirm() {
     if (!deleteTarget) return;
@@ -75,6 +100,72 @@ export default function AdminPage() {
           {users?.length ?? 0} user{users?.length !== 1 ? "s" : ""}
         </Typography>
       </Box>
+
+      {/* Release Notes */}
+      <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+        <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+          Send Release Notes
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <TextField
+            label="Changes since"
+            type="date"
+            size="small"
+            value={sinceDate}
+            onChange={(e) => handleSinceDateChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={{ width: 180 }}
+          />
+          <TextField
+            label="Subject"
+            size="small"
+            value={rnSubject}
+            onChange={(e) => setRnSubject(e.target.value)}
+            sx={{ flex: 1, minWidth: 280 }}
+          />
+          <Button
+            variant="outlined"
+            startIcon={generateMutation.isPending ? <CircularProgress size={16} /> : <AutoAwesomeIcon />}
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending || !sinceDate}
+          >
+            {generateMutation.isPending ? "Generating…" : "Generate with AI"}
+          </Button>
+        </Box>
+        {generateMutation.isError && (
+          <Alert severity="error" sx={{ mt: 1, py: 0 }}>Failed to generate. Check AI API key.</Alert>
+        )}
+        <TextField
+          label="Email body (HTML)"
+          multiline
+          rows={8}
+          fullWidth
+          size="small"
+          value={rnBody}
+          onChange={(e) => { setRnBody(e.target.value); setSentCount(null); }}
+          sx={{ mt: 2, fontFamily: "monospace" }}
+          slotProps={{ input: { sx: { fontFamily: "monospace", fontSize: "0.78rem" } } }}
+          placeholder="Click 'Generate with AI' to auto-populate from git history, or paste HTML manually."
+        />
+        <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<SendIcon />}
+            onClick={() => announcementMutation.mutate()}
+            disabled={announcementMutation.isPending || !sinceDate || !rnSubject || !rnBody}
+          >
+            {announcementMutation.isPending ? "Sending…" : "Send to users registered before this date"}
+          </Button>
+          {sentCount !== null && (
+            <Alert severity="success" sx={{ py: 0 }}>
+              Sent to {sentCount} user{sentCount !== 1 ? "s" : ""}
+            </Alert>
+          )}
+          {announcementMutation.isError && (
+            <Alert severity="error" sx={{ py: 0 }}>Failed to send. Try again.</Alert>
+          )}
+        </Box>
+      </Paper>
 
       {/* Table */}
       <Box sx={{ bgcolor: "background.paper", borderRadius: 2, overflow: "hidden", border: 1, borderColor: "divider" }}>
