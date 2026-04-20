@@ -1,1 +1,390 @@
-[{"date":"2026-03-23","subject":"test: add unit tests for OB.2 + MS.1 (onboarding + Seed with AI panel)"},{"date":"2026-03-23","subject":"feat: add MS.1 — Seed with AI panel in Mind Map canvas"},{"date":"2026-03-23","subject":"feat: add OB.2 onboarding backend — AI seed commands + API endpoints"},{"date":"2026-03-22","subject":"feat: add OnboardingStatus to User entity with migration"},{"date":"2026-03-22","subject":"feat: email verification frontend — verify page, unverified banner, store"},{"date":"2026-03-22","subject":"feat: add email verification API endpoints and email_verified JWT claim"},{"date":"2026-03-22","subject":"feat: add email verification commands and update AuthResponse"},{"date":"2026-03-22","subject":"feat: add IsEmailVerified + verification token fields to User (domain + migration)"},{"date":"2026-03-21","subject":"feat: MindMap focus mode + Ikigai seed UX + Goals milestone gating"},{"date":"2026-03-20","subject":"feat: per-habit notifications, delete habit, custom duration, flow timer improvements"},{"date":"2026-03-20","subject":"fix: stale-closure in WeeklyReview auto-save + full audit log"},{"date":"2026-03-20","subject":"fix: add FocusMusic to AmbientSoundMode enum"},{"date":"2026-03-20","subject":"feat: add Focus music option to Sounds selector in session setup"},{"date":"2026-03-20","subject":"fix: service worker + PWA meta tag + test type fixes"},{"date":"2026-03-20","subject":"feat: replace Jamendo with Openverse for key-free CC-licensed music"},{"date":"2026-03-20","subject":"fix+test: music strip always visible; over-time + PreSessionSetup tests"},{"date":"2026-03-20","subject":"feat: over-time indicator with user-configurable preference"},{"date":"2026-03-20","subject":"test: cover complete/interrupt commands, Jamendo service, FlowPage restore, FlowTimer interrupt"},{"date":"2026-03-20","subject":"fix: flow session not cleared after interrupt/end"},{"date":"2026-03-20","subject":"feat: ambient noise + Jamendo focus music in FlowTimer"},{"date":"2026-03-20","subject":"fix: flow session complete + interrupt endpoints + ambient sound"},{"date":"2026-03-20","subject":"fix: analytics GET endpoints — normalize DateTimeOffset to UTC for Npgsql"},{"date":"2026-03-20","subject":"fix: recharts Tooltip formatter type annotation"},{"date":"2026-03-20","subject":"feat: tests for UpdateGoalProgressCommand, GetGoalProgressHistory, GoalProgressBar + snapshot upsert"},{"date":"2026-03-20","subject":"feat: place GoalProgressBar in GoalCard, GoalDetailPage, WeeklyReview + fix progress field name"},{"date":"2026-03-19","subject":"feat: add tests for force-directed layout"},{"date":"2026-03-19","subject":"feat: GoalProgressBar component + goalApi progressPercent + updateProgress/history methods"},{"date":"2026-03-19","subject":"feat: PATCH /goals/{id}/progress + GET /goals/{id}/progress/history endpoints"},{"date":"2026-03-19","subject":"feat: UpdateGoalProgressCommand + GetGoalProgressHistoryQuery + GoalDto ProgressPercent"},{"date":"2026-03-19","subject":"feat: add force-directed layout to MindMap"},{"date":"2026-03-19","subject":"feat: add ProgressPercent to Goal + GoalProgressSnapshot entity + migration"},{"date":"2026-03-19","subject":"fix(tests): remove unused imports causing noUnusedLocals TS errors"},{"date":"2026-03-19","subject":"test(frontend): IkigaiCompletePage + IkigaiSeedPage + NorthStarIllustration + MindMapPage banner tests"},{"date":"2026-03-19","subject":"feat(frontend): IkigaiCompletePage + IkigaiSeedPage + routing + MindMap banner"},{"date":"2026-03-19","subject":"feat(frontend): ikigaiStore + NorthStarIllustration + ikigaiApi additions"},{"date":"2026-03-19","subject":"test(backend): extraction service tests + seed command tests"},{"date":"2026-03-19","subject":"feat(api): POST /ikigai/extract-themes + POST /mind-maps/seed-from-ikigai"},{"date":"2026-03-19","subject":"feat(application): SeedMindMapFromIkigaiCommand"},{"date":"2026-03-19","subject":"feat(infra): IkigaiThemeExtractionService (Anthropic Haiku) + AnthropicSettings"},{"date":"2026-03-19","subject":"feat(application): IIkigaiThemeExtractionService + ExtractIkigaiThemesCommand"},{"date":"2026-03-19","subject":"feat(domain): add HasSeededMindMap to IkigaiJourney + migration"},{"date":"2026-03-19","subject":"test: CreateFlowSessionCommand handler, validator, and integration tests"},{"date":"2026-03-19","subject":"fix: add POST /api/v1/flow-sessions endpoint"},{"date":"2026-03-19","subject":"feat: journey-complete screen — two-column layout with ikigai→mindmap image"},{"date":"2026-03-19","subject":"fix: double api/v1 prefix + hero image wiring"},{"date":"2026-03-19","subject":"fix: restore build — import default export, global→window, vitest/config"},{"date":"2026-03-19","subject":"feat: admin analytics dashboard with recharts + tests"},{"date":"2026-03-19","subject":"feat: instrument all pages with usePageAnalytics"},{"date":"2026-03-19","subject":"test: usePageAnalytics hook — all 16 tests pass"},{"date":"2026-03-19","subject":"feat: analytics API module, usePageAnalytics hook, recharts"},{"date":"2026-03-19","subject":"test: analytics backend tests — all 28 pass"},{"date":"2026-03-19","subject":"feat: analytics commands, queries, Redis buffer, Hangfire flush job"},{"date":"2026-03-19","subject":"feat: analytics entities (PageSession, UserAction) + EF migration"},{"date":"2026-03-19","subject":"feat(tests): near-100% test coverage — 194 backend + 22 frontend tests"},{"date":"2026-03-18","subject":"fix: add Designer.cs for orphan migrations to fix deployment ordering"},{"date":"2026-03-18","subject":"feat: mobile nav, mindmap focus improvements, push notifications, password reset"},{"date":"2026-03-18","subject":"feat(8.3): push notification frontend + settings page"},{"date":"2026-03-18","subject":"feat(8.2): push notification backend — jobs, controller, DI wiring"},{"date":"2026-03-18","subject":"feat(8.2): push notification entities and EF migration"},{"date":"2026-03-18","subject":"feat(8.1): install prompt banner for Android and iOS"},{"date":"2026-03-18","subject":"feat(8.1): service worker with Cache-First/Network-First strategies"},{"date":"2026-03-18","subject":"feat(8.1): PWA manifest, icons, and HTML meta tags"},{"date":"2026-03-18","subject":"feat(7.5 frontend): mind map focus mode and deadline filter"},{"date":"2026-03-18","subject":"feat(7.5 backend): mind map goal status enrichment and deadline filter endpoint"},{"date":"2026-03-18","subject":"fix(7.4): habit goal creation from mind map convert flow"},{"date":"2026-03-18","subject":"feat(7.3): goal detail page with SMART/WOOP/tasks/habit tabs"},{"date":"2026-03-18","subject":"feat(7.2): mind map inline node editing and unified edit panel"},{"date":"2026-03-18","subject":"feat(7.2): add LifeArea field to MindMapNode for node categorization"},{"date":"2026-03-18","subject":"feat(7.1): mind map node IkigaiCategory badges and icon display"},{"date":"2026-03-18","subject":"feat(7.1): add IkigaiCategory and Icon to MindMapNode"},{"date":"2026-03-17","subject":"fix(7.0): add edit and delete for tasks and milestones"},{"date":"2026-03-17","subject":"feat(mindmap): add Radial Tree and Tidy Tree views with extensible view switcher"},{"date":"2026-03-17","subject":"fix: hide broken logo img when PNG is missing"},{"date":"2026-03-17","subject":"fix: integrate FlowkigaiLogo in landing page, login and register"},{"date":"2026-03-17","subject":"fix: add FlowkigaiLogo component and public/icons directory"},{"date":"2026-03-17","subject":"fix: dark theme applied to landing page"},{"date":"2026-03-17","subject":"fix(mindmap): move useCallback out of JSX to fix invalid hook call"},{"date":"2026-03-17","subject":"fix(mindmap): correct depth-3 limit, tooltip, and zoom-through"},{"date":"2026-03-17","subject":"feat(mindmap): hover tooltip, 3-level depth limit, no-truncation label scaling"},{"date":"2026-03-17","subject":"feat: convert /docs into public landing page at /"},{"date":"2026-03-17","subject":"feat: wrap long mind map labels into 2 lines with auto font scaling"},{"date":"2026-03-17","subject":"fix: use IsInRole for IsAdmin check in CurrentUserService"},{"date":"2026-03-17","subject":"fix: use RequireRole for AdminOnly policy"},{"date":"2026-03-17","subject":"Prompt 6.2+: Admin panel, user roles, email service, docs page"},{"date":"2026-03-16","subject":"fix: correct field names in seed-demo.sh"},{"date":"2026-03-16","subject":"Prompt 6.2: POC hardening — health endpoint, rate limiting, error states"},{"date":"2026-03-16","subject":"Persist ASP.NET DataProtection keys via Docker volume"},{"date":"2026-03-15","subject":"Add deployment + security hardening changes"},{"date":"2026-03-15","subject":"Add project files."},{"date":"2026-03-15","subject":"Add .gitattributes."}]
+[
+  {
+    "date": "2026-04-19",
+    "subject": "feat: add admin release notes, announcements, and push notification support"
+  },
+  {
+    "date": "2026-04-19",
+    "subject": "fix: dashboard API double prefix + DbContext thread-safety"
+  },
+  {
+    "date": "2026-04-19",
+    "subject": "test: add Dashboard backend + frontend tests (11 + 12 passing)"
+  },
+  {
+    "date": "2026-04-19",
+    "subject": "feat: wire dashboard query invalidation across all mutation hooks"
+  },
+  {
+    "date": "2026-04-19",
+    "subject": "feat: scaffold DashboardPage with all 4 sections, update routing to /dashboard default"
+  },
+  {
+    "date": "2026-04-19",
+    "subject": "feat: add Dashboard backend \u00e2\u20ac\u201d DashboardDto, GetDashboardQuery, DashboardController"
+  },
+  {
+    "date": "2026-04-07",
+    "subject": "test: add comprehensive Playwright e2e tests for frontend (50/50 passing)"
+  },
+  {
+    "date": "2026-03-23",
+    "subject": "test: add unit tests for OB.2 + MS.1 (onboarding + Seed with AI panel)"
+  },
+  {
+    "date": "2026-03-23",
+    "subject": "feat: add MS.1 \u00e2\u20ac\u201d Seed with AI panel in Mind Map canvas"
+  },
+  {
+    "date": "2026-03-23",
+    "subject": "feat: add OB.2 onboarding backend \u00e2\u20ac\u201d AI seed commands + API endpoints"
+  },
+  {
+    "date": "2026-03-22",
+    "subject": "feat: add OnboardingStatus to User entity with migration"
+  },
+  {
+    "date": "2026-03-22",
+    "subject": "feat: email verification frontend \u00e2\u20ac\u201d verify page, unverified banner, store"
+  },
+  {
+    "date": "2026-03-22",
+    "subject": "feat: add email verification API endpoints and email_verified JWT claim"
+  },
+  {
+    "date": "2026-03-22",
+    "subject": "feat: add email verification commands and update AuthResponse"
+  },
+  {
+    "date": "2026-03-22",
+    "subject": "feat: add IsEmailVerified + verification token fields to User (domain + migration)"
+  },
+  {
+    "date": "2026-03-21",
+    "subject": "feat: MindMap focus mode + Ikigai seed UX + Goals milestone gating"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: per-habit notifications, delete habit, custom duration, flow timer improvements"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: stale-closure in WeeklyReview auto-save + full audit log"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: add FocusMusic to AmbientSoundMode enum"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: add Focus music option to Sounds selector in session setup"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: service worker + PWA meta tag + test type fixes"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: replace Jamendo with Openverse for key-free CC-licensed music"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix+test: music strip always visible; over-time + PreSessionSetup tests"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: over-time indicator with user-configurable preference"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "test: cover complete/interrupt commands, Jamendo service, FlowPage restore, FlowTimer interrupt"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: flow session not cleared after interrupt/end"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: ambient noise + Jamendo focus music in FlowTimer"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: flow session complete + interrupt endpoints + ambient sound"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: analytics GET endpoints \u00e2\u20ac\u201d normalize DateTimeOffset to UTC for Npgsql"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "fix: recharts Tooltip formatter type annotation"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: tests for UpdateGoalProgressCommand, GetGoalProgressHistory, GoalProgressBar + snapshot upsert"
+  },
+  {
+    "date": "2026-03-20",
+    "subject": "feat: place GoalProgressBar in GoalCard, GoalDetailPage, WeeklyReview + fix progress field name"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: add tests for force-directed layout"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: GoalProgressBar component + goalApi progressPercent + updateProgress/history methods"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: PATCH /goals/{id}/progress + GET /goals/{id}/progress/history endpoints"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: UpdateGoalProgressCommand + GetGoalProgressHistoryQuery + GoalDto ProgressPercent"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: add force-directed layout to MindMap"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: add ProgressPercent to Goal + GoalProgressSnapshot entity + migration"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "fix(tests): remove unused imports causing noUnusedLocals TS errors"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "test(frontend): IkigaiCompletePage + IkigaiSeedPage + NorthStarIllustration + MindMapPage banner tests"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(frontend): IkigaiCompletePage + IkigaiSeedPage + routing + MindMap banner"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(frontend): ikigaiStore + NorthStarIllustration + ikigaiApi additions"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "test(backend): extraction service tests + seed command tests"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(api): POST /ikigai/extract-themes + POST /mind-maps/seed-from-ikigai"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(application): SeedMindMapFromIkigaiCommand"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(infra): IkigaiThemeExtractionService (Anthropic Haiku) + AnthropicSettings"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(application): IIkigaiThemeExtractionService + ExtractIkigaiThemesCommand"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(domain): add HasSeededMindMap to IkigaiJourney + migration"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "test: CreateFlowSessionCommand handler, validator, and integration tests"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "fix: add POST /api/v1/flow-sessions endpoint"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: journey-complete screen \u00e2\u20ac\u201d two-column layout with ikigai\u00e2\u2020\u2019mindmap image"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "fix: double api/v1 prefix + hero image wiring"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "fix: restore build \u00e2\u20ac\u201d import default export, global\u00e2\u2020\u2019window, vitest/config"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: admin analytics dashboard with recharts + tests"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: instrument all pages with usePageAnalytics"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "test: usePageAnalytics hook \u00e2\u20ac\u201d all 16 tests pass"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: analytics API module, usePageAnalytics hook, recharts"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "test: analytics backend tests \u00e2\u20ac\u201d all 28 pass"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: analytics commands, queries, Redis buffer, Hangfire flush job"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat: analytics entities (PageSession, UserAction) + EF migration"
+  },
+  {
+    "date": "2026-03-19",
+    "subject": "feat(tests): near-100% test coverage \u00e2\u20ac\u201d 194 backend + 22 frontend tests"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "fix: add Designer.cs for orphan migrations to fix deployment ordering"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat: mobile nav, mindmap focus improvements, push notifications, password reset"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(8.3): push notification frontend + settings page"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(8.2): push notification backend \u00e2\u20ac\u201d jobs, controller, DI wiring"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(8.2): push notification entities and EF migration"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(8.1): install prompt banner for Android and iOS"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(8.1): service worker with Cache-First/Network-First strategies"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(8.1): PWA manifest, icons, and HTML meta tags"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.5 frontend): mind map focus mode and deadline filter"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.5 backend): mind map goal status enrichment and deadline filter endpoint"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "fix(7.4): habit goal creation from mind map convert flow"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.3): goal detail page with SMART/WOOP/tasks/habit tabs"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.2): mind map inline node editing and unified edit panel"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.2): add LifeArea field to MindMapNode for node categorization"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.1): mind map node IkigaiCategory badges and icon display"
+  },
+  {
+    "date": "2026-03-18",
+    "subject": "feat(7.1): add IkigaiCategory and Icon to MindMapNode"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix(7.0): add edit and delete for tasks and milestones"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "feat(mindmap): add Radial Tree and Tidy Tree views with extensible view switcher"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix: hide broken logo img when PNG is missing"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix: integrate FlowkigaiLogo in landing page, login and register"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix: add FlowkigaiLogo component and public/icons directory"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix: dark theme applied to landing page"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix(mindmap): move useCallback out of JSX to fix invalid hook call"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix(mindmap): correct depth-3 limit, tooltip, and zoom-through"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "feat(mindmap): hover tooltip, 3-level depth limit, no-truncation label scaling"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "feat: convert /docs into public landing page at /"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "feat: wrap long mind map labels into 2 lines with auto font scaling"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix: use IsInRole for IsAdmin check in CurrentUserService"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "fix: use RequireRole for AdminOnly policy"
+  },
+  {
+    "date": "2026-03-17",
+    "subject": "Prompt 6.2+: Admin panel, user roles, email service, docs page"
+  },
+  {
+    "date": "2026-03-16",
+    "subject": "fix: correct field names in seed-demo.sh"
+  },
+  {
+    "date": "2026-03-16",
+    "subject": "Prompt 6.2: POC hardening \u00e2\u20ac\u201d health endpoint, rate limiting, error states"
+  },
+  {
+    "date": "2026-03-16",
+    "subject": "Persist ASP.NET DataProtection keys via Docker volume"
+  },
+  {
+    "date": "2026-03-15",
+    "subject": "Add deployment + security hardening changes"
+  },
+  {
+    "date": "2026-03-15",
+    "subject": "Add project files."
+  },
+  {
+    "date": "2026-03-15",
+    "subject": "Add .gitattributes."
+  }
+]
