@@ -30,6 +30,6 @@ FROM base AS final
 WORKDIR /app
 COPY --from=node-build /app/dist ./wwwroot
 COPY --from=publish /app/publish .
-# Changelog generated locally before deploy (see deploy instructions)
+# Changelog auto-generated before deploy (see docker-compose.prod.yml)
 COPY changelog.json ./changelog.json
 ENTRYPOINT ["dotnet", "YearPlanningApp.API.dll"]
